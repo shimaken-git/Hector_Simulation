@@ -29,6 +29,8 @@ class CheatIO : public IOInterface
         ros::Publisher _servo_pub[10];
         unitree_legged_msgs::LowCmd _lowCmd;
         unitree_legged_msgs::HighState _highState;
+        ros::AsyncSpinner _subSpinner; 
+
 
         std::string _robot_name;
         void initRecv(); // initialize subscribers

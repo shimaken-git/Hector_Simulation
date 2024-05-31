@@ -9,7 +9,7 @@ inline void RosShutDown(int sig){
 	ros::shutdown();
 }
 
-CheatIO::CheatIO(std::string robot_name):IOInterface()
+CheatIO::CheatIO(std::string robot_name):IOInterface(), _subSpinner(1)
 {
     // int argc; char **argv;
     // ros::init(argc, argv, "unitree_gazebo_servo");
@@ -18,14 +18,11 @@ CheatIO::CheatIO(std::string robot_name):IOInterface()
 
     // start subscriber
     initRecv();
-    ros::AsyncSpinner subSpinner(1); // one threads
-    subSpinner.start();
+    _subSpinner.start();
     usleep(3000);     //wait for subscribers start
     // initialize publisher
     initSend();   
-
     signal(SIGINT, RosShutDown);
-
     cmdPanel = new KeyBoard();
 }
 
@@ -58,7 +55,6 @@ void CheatIO::sendCmd(const LowlevelCmd *cmd)
         _servo_pub[m].publish(_lowCmd.motorCmd[m]);
     }
 
-    ros::spinOnce();
 }
 
 void CheatIO::recvState(LowlevelState *state)
