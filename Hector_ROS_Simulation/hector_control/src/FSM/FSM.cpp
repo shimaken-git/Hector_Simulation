@@ -27,7 +27,7 @@ void FSM::initialize()
 
 void FSM::run()
 {
-    _data->sendRecv();
+    // _data->sendRecv();
 
     if(!checkSafty())
     {

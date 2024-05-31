@@ -3,6 +3,7 @@
 #include <csignal>
 #include <sched.h>
 #include <string>
+#include <thread>
 
 #include "../include/common/ControlFSMData.h"
 #include "../include/common/OrientationEstimator.h"
@@ -16,6 +17,16 @@ void ShutDown(int sig)
 {
     std::cout << "stop" << std::endl;
     running = false;
+}
+
+void runFSMController(FSM* _FSMController)
+{
+    ros::Rate rate(1000); 
+    while (running)
+    {
+        _FSMController->run();
+        rate.sleep();
+    }
 }
 
 int main(int argc, char ** argv)
@@ -61,11 +72,14 @@ int main(int argc, char ** argv)
 
     FSM* _FSMController = new FSM(_controlData);
 
+    // FSM in a separate thread
+    std::thread fsm_thread(runFSMController, _FSMController);    
+
     signal(SIGINT, ShutDown);
     
     while(running)
-    {
-        _FSMController->run();
+    {   
+        ioInter->sendRecv(cmd, state);
         rate.sleep();
     }
     
