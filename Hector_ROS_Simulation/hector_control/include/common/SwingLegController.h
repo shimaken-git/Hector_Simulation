@@ -58,6 +58,7 @@ class swingLegController {
         Vec3<double> pFoot_b[nLegs];
         Vec3<double> vFoot_b[nLegs];                        
         Vec2<double> swingStates;
+        Vec2<double> contactStates;
         Vec2<double> swingTimes;
         Vec5<double> qDes[nLegs];  
         Vec3<double> L_hipYawLocation;

@@ -193,6 +193,9 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
 
   Vec2<double> se_contactState(0, 0);
 
+  swing.updateSwingLeg(); // update swing leg controller
+
+
   for (int foot = 0; foot < 2; foot++)
   {
 
@@ -202,8 +205,6 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
     std::cout << "Contact " << foot << ": " << contactState << std::endl;
     Vec3<double> pFootWorld;
     
-    swing.updateSwingLeg(); // update swing leg controller
-
     if (swingState > 0) // foot is in swing
     {
       // if (firstSwing[foot])

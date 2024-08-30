@@ -72,6 +72,7 @@ void swingLegController::updateFootPosition(){
 
 void swingLegController::updateSwingStates(){
     swingStates = gait->getSwingSubPhase();
+    contactStates = gait->getContactSubPhase();
 }
 
 /******************************************************************************************************/
@@ -83,13 +84,12 @@ void swingLegController::updateSwingTimes(){
             swingTimes[leg] = _dtSwing * gait->_swing;
         }else{
             swingTimes[leg] -= _dt;
-            if(swingTimes[leg] <= 0){
+            if(contactStates[leg] > 0){
                 firstSwing[leg] = true;
-            }
+            }            
         }
     }
 }
-
 /******************************************************************************************************/
 /******************************************************************************************************/
 
@@ -102,17 +102,17 @@ void swingLegController::computeFootPlacement(){
 
     v_des_world = seResult.rBody.transpose() * v_des_robot;    
     for(int foot = 0; foot < nLegs; foot++){
-        footSwingTrajectory[foot].setHeight(0.15);
+        footSwingTrajectory[foot].setHeight(0.12);
         Vec3<double> Pf = seResult.position +
                 seResult.rBody.transpose() * (data->_biped->getHipYawLocation(foot))
                 + seResult.vWorld * swingTimes[foot];
 
         double p_rel_max =  0.3;
-        double pfx_rel   =  1.75 * seResult.vWorld[0] * 0.5 * gait->_stance * _dtSwing +
-                            0.1  * (seResult.vWorld[0] - v_des_world[0]);
+        double pfx_rel   =  1.0 * seResult.vWorld[0] * 0.5 * gait->_stance * _dtSwing +
+                            0.03  * (seResult.vWorld[0] - v_des_world[0]);
 
-        double pfy_rel   =  1.75 * seResult.vWorld[1] * 0.5 * gait->_stance * _dtSwing +
-                            0.1  * (seResult.vWorld[1] - v_des_world[1]);
+        double pfy_rel   =  1.0 * seResult.vWorld[1] * 0.5 * gait->_stance * _dtSwing +
+                            0.03  * (seResult.vWorld[1] - v_des_world[1]);
         pfx_rel = fminf(fmaxf(pfx_rel, -p_rel_max), p_rel_max);
         pfy_rel = fminf(fmaxf(pfy_rel, -p_rel_max), p_rel_max);
 
@@ -138,7 +138,7 @@ void swingLegController::computeFootDesiredPosition(){
               footSwingTrajectory[foot].setInitialPosition(pFoot_w[foot]);
                }
             //Compute and get the desired foot position and velocity
-            footSwingTrajectory[foot].computeSwingTrajectoryBezier(swingStates[foot], 0.2); //FIX: second argument not used in function
+            footSwingTrajectory[foot].computeSwingTrajectoryBezier(swingStates[foot], 0.25); //FIX: second argument not used in function
             Vec3<double> pDesFootWorld = footSwingTrajectory[foot].getPosition().cast<double>();
             Vec3<double> vDesFootWorld = footSwingTrajectory[foot].getVelocity().cast<double>();
 
@@ -195,9 +195,9 @@ void swingLegController::setDesiredJointState(){
             computeIK(pFoot_b[leg], data->_legController->commands[leg].qDes, leg);
             data->_legController->commands[leg].qdDes = Eigen::Matrix<double, 5, 1>::Zero();
             Eigen::VectorXd kpgains(5);
-            kpgains << 30, 30, 30, 30, 20;
+            kpgains << 25.0, 25.0, 25.0, 25.0, 10.0;
             Eigen::VectorXd kdgains(5);
-            kdgains << 1, 1, 1, 1, 1;
+            kdgains << 1.0, 1.0, 1.0, 1.0, 0.6;
              data->_legController->commands[leg].feedforwardForce << 0, 0, 0 , 0 , 0 , 0;
              data->_legController->commands[leg].pDes = pFoot_b[leg];
              data->_legController->commands[leg].vDes = vFoot_b[leg];
@@ -210,7 +210,7 @@ void swingLegController::setDesiredJointState(){
             Eigen::VectorXd kpgains(5);
             Eigen::VectorXd kdgains(5);
             kpgains.setZero();
-            kdgains.setZero();
+            kdgains << 1.0, 1.0, 1.0, 1.0, 0.6;
             data->_legController->commands[leg].kpJoint = kpgains.asDiagonal();
             data->_legController->commands[leg].kdJoint = kdgains.asDiagonal(); 
             data->_legController->commands[leg].kpCartesian = Eigen::Matrix3d::Zero();
