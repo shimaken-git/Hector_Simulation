@@ -118,6 +118,22 @@
         <material>Gazebo/Grey</material>
         
     </gazebo>
+    <gazebo reference="bumper_LF">
+        <mu1>3</mu1>
+        <mu2>3</mu2>
+        <kp  value="1000000.0"/>
+        <kd  value="1000.0"/>
+        <self_collide>0</self_collide>
+        <material>Gazebo/Red</material>
+    </gazebo>
+    <gazebo reference="bumper_LB">
+        <mu1>3</mu1>
+        <mu2>3</mu2>
+        <kp  value="1000000.0"/>
+        <kd  value="1000.0"/>
+        <self_collide>0</self_collide>
+        <material>Gazebo/Red</material>
+    </gazebo>
 
     <!--R leg -->
     <gazebo reference="R_hip">
@@ -158,6 +174,22 @@
         <self_collide>0</self_collide>
         <material>Gazebo/Grey</material>
         
+    </gazebo>
+    <gazebo reference="bumper_RF">
+        <mu1>3</mu1>
+        <mu2>3</mu2>
+        <kp  value="1000000.0"/>
+        <kd  value="1000.0"/>
+        <self_collide>0</self_collide>
+        <material>Gazebo/Red</material>
+    </gazebo>
+    <gazebo reference="bumper_RB">
+        <mu1>3</mu1>
+        <mu2>3</mu2>
+        <kp  value="1000000.0"/>
+        <kd  value="1000.0"/>
+        <self_collide>0</self_collide>
+        <material>Gazebo/Red</material>
     </gazebo>
 
 </robot>

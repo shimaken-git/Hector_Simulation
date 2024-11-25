@@ -195,6 +195,9 @@ Mat3<typename T::Scalar> quaternionToRotationMatrix(
       1 - 2 * (e1 * e1 + e3 * e3), 2 * (e2 * e3 - e0 * e1),
       2 * (e1 * e3 - e0 * e2), 2 * (e2 * e3 + e0 * e1),
       1 - 2 * (e1 * e1 + e2 * e2);
+  // R << 2 * (e0 * e0 + e1 * e1) - 1, 2 * (e1 * e2 - e0 * e3), 2 * (e1 * e3 + e0 * e2),  //教科書による式。これだと動かない。なぜだ？
+  //     2 * (e1 * e2 + e0 * e3), 2 * (e0 * e0 + e2 * e2) - 1, 2 * (e2 * e3 - e0 * e1),
+  //     2 * (e1 * e3 - e0 * e2), 2 * (e2 * e3 + e0 * e1), 2 * (e0 * e0 + e3 * e3) - 1;
   R.transposeInPlace();
   return R;
 }

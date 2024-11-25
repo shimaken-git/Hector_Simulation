@@ -154,7 +154,7 @@
             <parent link="${name}_hip2"/>
             <child link="${name}_thigh"/>
             <axis xyz="0 1 0"/>
-            <joint_properties damping="${damping}" friction="${friction}"/>
+            <dynamics damping="${damping}" friction="${friction}"/>
             <!-- <limit effort="${thigh_torque_max}" velocity="${thigh_velocity_max}"/> -->
             <limit effort="${thigh_torque_max}" velocity="${thigh_velocity_max}" lower="${thigh_min*PI/180.0}" upper="${thigh_max*PI/180.0}"/>
         </joint>
@@ -243,7 +243,7 @@
             <parent link="${name}_thigh"/>
             <child link="${name}_calf"/>
             <axis xyz="0 1 0"/>
-            <joint_properties damping="${damping}" friction="${friction}"/>
+            <dynamics damping="${damping}" friction="${friction}"/>
             <limit effort="${calf_torque_max}" velocity="${calf_velocity_max}" lower="${calf_min*PI/180.0}" upper="${calf_max*PI/180.0}"/>
         </joint>
 
@@ -283,7 +283,7 @@
             <parent link="${name}_calf"/>
             <child link="${name}_toe"/>
             <axis xyz="0 1 0"/>
-            <joint_properties damping="${damping}" friction="${friction}"/>
+            <dynamics damping="${damping}" friction="${friction}"/>
             <limit effort="${toe_torque_max}" velocity="${toe_velocity_max}" lower="${toe_min*PI/180.0}" upper="${toe_max*PI/180.0}"/>
         </joint>
 

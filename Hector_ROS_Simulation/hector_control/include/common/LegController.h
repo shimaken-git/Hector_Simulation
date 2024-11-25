@@ -30,6 +30,8 @@ SOFTWARE.
 #include "../messages/LowLevelCmd.h"
 #include "Biped.h"
 
+// #include<iostream>
+// #include<fstream>
 
 /*!
  * Data sent from control algorithm to legs
@@ -64,6 +66,8 @@ SOFTWARE.
         Mat35<double> J_force;
         Vec5<double> tau;
         Biped* hector;
+
+        Vec3<double> tip[2];
     };
 
 /*!
@@ -78,6 +82,8 @@ SOFTWARE.
                 commands[i].zero();
                 data[i].zero();
             }
+
+            // outputfile.open("tau_data.txt");
         };
         
         void zeroCommand();
@@ -92,9 +98,11 @@ SOFTWARE.
         std::string limbName[5] = {"Hip 1", "Hip 2", "Thigh", "Knee ", "Toe  "};
         std::string Side[2] = {"Left ", "Right"};        
         Biped& _biped;
+
+        // std::ofstream outputfile;
     };
 
-    void computeLegJacobianAndPosition(Biped& _biped, Vec5<double>& q, Mat65<double>* J_f_m, Mat35<double>* J_f, 
-                                       Vec3<double>* p, int leg);
-
+    void computeLegJacobianAndPosition(Biped& _biped, Vec5<double>& q, Mat65<double>* J_f_m, Mat35<double>* J_f, Vec3<double>* p, int leg);
+    void computeHeelToePosition(Biped& _biped, Vec5<double>& q, Vec3<double>* toe, Vec3<double>* heel, int leg);
+                                       
 #endif

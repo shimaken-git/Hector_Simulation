@@ -5,4 +5,5 @@ FSMState::FSMState(ControlFSMData *data, FSMStateName stateName, std::string sta
 {
     _lowCmd = _data->_lowCmd;
     _lowState = _data->_lowState;
+    std::cout << "FSMState construct end." << std::endl;
 }

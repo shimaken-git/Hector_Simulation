@@ -3,6 +3,7 @@
 
 #include "StateEstimatorContainer.h"
 #include "Math/orientation_tools.h"
+#include "robot_select.h"
 
 class CheaterRobotStateEstimator: public GenericEstimator{
     public:

@@ -70,7 +70,9 @@ int main(int argc, char ** argv)
     _controlData->_lowCmd = cmd;
     _controlData->_lowState = state;
 
+    std::cout << "FSMController construct start" << std::endl;
     FSM* _FSMController = new FSM(_controlData);
+    std::cout << "FSMController construct end" << std::endl;
 
     // FSM in a separate thread
     std::thread fsm_thread(runFSMController, _FSMController);    
@@ -78,7 +80,7 @@ int main(int argc, char ** argv)
     signal(SIGINT, ShutDown);
     
     while(running)
-    {   
+    {
         ioInter->sendRecv(cmd, state);
         rate.sleep();
     }

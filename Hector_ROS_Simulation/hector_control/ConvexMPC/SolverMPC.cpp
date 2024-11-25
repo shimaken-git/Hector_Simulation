@@ -10,7 +10,7 @@
 #include <sys/time.h>
 #include "../include/common/Utilities/Timer.h"
 #include <fstream>
-
+#include "../include/common/robot_select.h"
 
 // #define K_PRINT_EVERYTHING
 #define BIG_NUMBER 5e10
@@ -83,6 +83,10 @@ Matrix<fpt, 3, 3> euler_to_rotation(fpt roll, fpt pitch, fpt yaw) {
     Rb << cos(y)*cos(p), -sin(y), 0,
           sin(y)*cos(p), cos(y), 0,
           -sin(p), 0, 1;
+
+    // Rb << sin(p)*sin(y), cos(y), 0,    // 論文にあるRbの式
+    //       sin(p)*cos(y), -sin(y), 0,
+    //       cos(p), 0, 1;
 
     Matrix<fpt, 3, 3> R = Rb.inverse();
     return R;
@@ -420,7 +424,18 @@ void solve_mpc(update_data_t *update, problem_setup *setup)
   x_0 << rpy(0), rpy(1), rpy(2), rs.p, rs.w, rs.v, 9.81f;
   I_world = rs.R * rs.I_body * rs.R.transpose(); // original
 
-  ct_ss_mats(I_world, 9.0, rs.r_feet, Rb, A_ct, B_ct_r);
+#ifdef _HECTOR_
+  ct_ss_mats(I_world, 9.0, rs.r_feet, Rb, A_ct, B_ct_r);   //hector
+#else
+#ifdef _LAMBDA_
+  // ct_ss_mats(I_world, 2.5, rs.r_feet, Rb, A_ct, B_ct_r);   //wwlambda
+  ct_ss_mats(I_world, 3.5, rs.r_feet, Rb, A_ct, B_ct_r);   //wwlambda + PC
+#else
+#ifdef _LAMBDA_R2_
+  ct_ss_mats(I_world, 4.0, rs.r_feet, Rb, A_ct, B_ct_r);   //wwlambda_r2 + PC
+#endif
+#endif
+#endif
 
   // Rotation of Foot:
   Matrix<fpt, 3, 3> R_foot_L;
@@ -485,28 +500,38 @@ void solve_mpc(update_data_t *update, problem_setup *setup)
 
 
   // Initalization of Line Contact Constraint Parameters
-  fpt mu = 2.0;
+  // fpt mu = 2.0;
+  fpt mu = setup->mu;
+#if defined(_HECTOR_)
   fpt lt = 0.09;
   fpt lh = 0.06;
+#else
+#if defined(_LAMBDA_) || defined(_LAMBDA_R2_)
+  // fpt lt = 0.04;
+  // fpt lh = 0.02;
+  fpt lt = 0.04;
+  fpt lh = 0.02;
+#endif
+#endif
 
   // Matrix<fpt,5,3> f_block;
   Matrix<fpt,10,12> f_blockz;
   Matrix<fpt,16,12> F_control;
 
   Matrix<fpt,1,3> lt_vec;
-  Matrix<fpt,1,3> lt_3D;
+  // Matrix<fpt,1,3> lt_3D;
   lt_vec << 0, 0, lt;
 
   Matrix<fpt,1,3> lh_vec;
-  Matrix<fpt,1,3> lh_3D;
+  // Matrix<fpt,1,3> lh_3D;
   lh_vec << 0, 0, lh;
 
   Matrix<fpt,1,3> M_vec;
   M_vec << 0, 1.0, 0;
-  Matrix<fpt,1,3> M_3D;
+  // Matrix<fpt,1,3> M_3D;
 
   Matrix<fpt,1,3> Moment_selection(1.f, 0, 0);
-  Matrix<fpt,1,3> Moment_selection_3D;
+  // Matrix<fpt,1,3> Moment_selection_3D;
 
   F_control.setZero();
 //leg 1
@@ -523,7 +548,8 @@ void solve_mpc(update_data_t *update, problem_setup *setup)
   F_control.block<1, 12>(5, 0) //Line Leg 1
       << -lt_vec * R_foot_L.transpose()* rs.R.transpose(),   0, 0, 0,  M_vec * R_foot_L.transpose()* rs.R.transpose(),  0, 0, 0;
   F_control.block<1, 12>(6, 0)
-      <<  -lh_vec * R_foot_L.transpose()* rs.R.transpose(),   0, 0, 0, -M_vec * R_foot_L.transpose()* rs.R.transpose(),  0, 0, 0;
+      // <<  -lh_vec * R_foot_L.transpose()* rs.R.transpose(),   0, 0, 0, -M_vec * R_foot_L.transpose()* rs.R.transpose(),  0, 0, 0;
+      <<  -lh_vec * R_foot_L.transpose()* rs.R.transpose(),   0, 0, 0, M_vec * R_foot_L.transpose()* rs.R.transpose(),  0, 0, 0;
   F_control.block<1, 12>(7, 0) //Fz Leg 1
       << 0, 0, 2.f, 0, 0, 0,   0, 0, 0, 0, 0, 0;
 

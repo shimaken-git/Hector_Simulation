@@ -56,6 +56,15 @@ struct StateEstimate {
     Vec3<double> omegaWorld;
     Vec3<double> vWorld;
     Vec3<double> aBody, aWorld;
+
+    bool p_world_confirm;
+    Vec3<double> p_world;         //tipPrintより算出したworld position
+    Vec3<double> v_world;         //tipPrintより算出したworld velocity
+    Vec3<double> rtip[4];         //tipをrBodyで回転させたもの
+    Vec3<double> tipPrint[4];
+    bool tipPrint_confirm[4];
+    bool firstStage;              //初期のロボットが浮いている状態ならtrue
+    bool tpValid[4];              //tipPrint[]が有効ならtrue
 };
 
 struct CheaterState{
@@ -120,6 +129,36 @@ class StateEstimatorContainer {
 
     // get result
     const StateEstimate&  getResult() {return *_data.result;}
+
+    // get result
+    const StateEstimate* getResult_() {return _data.result;}
+
+    // update rtip
+    void calcRtip(int idx, Vec3<double> tipVec){
+        _data.result->rtip[idx] = _data.result->rBody.transpose() * tipVec;
+    }
+
+    // set w_positon
+    void set_p_world(Vec3<double> _position){
+        _data.result->p_world = _position;
+    }
+
+    // init w_positon
+    void init_p_world(){
+        _data.result->p_world = Vec3<double>(0,0,0.335);
+        _data.result->p_world_confirm = false;
+        for(int i = 0; i < 4; i++) _data.result->tipPrint_confirm[i] = false;
+    }
+
+    // set tipPrint
+    void set_tipPrint(int idx, Vec3<double> _p){
+        _data.result->tipPrint[idx] = _p;
+        _data.result->tipPrint_confirm[idx] = true;
+    }
+
+    void set_firstStage(bool b){
+        _data.result->firstStage = b;
+    }
 
     // add estimator of given type
     template <typename EstimatorToAdd>

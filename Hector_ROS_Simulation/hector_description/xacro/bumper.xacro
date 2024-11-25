@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:macro name="bumper" params="side front parent">
+    <link name="bumper_${side}${front}">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry>
+                <box size="${bumper_depth} ${bumper_width} ${bumper_height}"/>
+            </geometry>
+            <material name="red"/>
+        </visual>
+        <collision name="bumper_${side}${front}_collision">
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <geometry name="bumper_${side}${front}_collision">
+                <box size="${bumper_depth - collision_avoidance} ${bumper_width - collision_avoidance} ${bumper_height - collision_avoidance}"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <mass value="0.001"/>
+            <inertia ixx="1e-9" ixy="0" ixz="0" iyy="1e-9" iyz="0" izz="1e-9"/>
+        </inertial>
+    </link>
+    <joint name="${side}${front}_bumper" type="fixed">
+        <parent link="${parent}"/>
+        <child link="bumper_${side}${front}"/>
+        <xacro:if value="${(front == 'F')}">
+            <origin rpy="0 0 0" xyz="${t_depth/2 - bumper_depth/2} 0 ${-t_height - bumper_height/2}"/>
+        </xacro:if>
+        <xacro:if value="${(front == 'B')}">
+            <origin rpy="0 0 0" xyz="${-t_depth/2 + bumper_depth/2} 0 ${-t_height - bumper_height/2}"/>
+        </xacro:if>
+    </joint>
+
+    <gazebo reference="bumper_${side}${front}">
+        <material>Gazebo/Red</material>
+        <selfCollide>true</selfCollide>
+        <sensor name="bumper_${side}${front}_sensor" type="contact">
+            <contact>
+                <xacro:if value="${(front == 'F')}">
+                    <collision>${parent}_fixed_joint_lump__bumper_${side}${front}_collision_collision_2</collision>
+                </xacro:if>
+                <xacro:if value="${(front == 'B')}">
+                    <collision>${parent}_fixed_joint_lump__bumper_${side}${front}_collision_collision_1</collision>
+                </xacro:if>
+            </contact>
+            <plugin name="gazebo_ros_bumper_controller" filename="libgazebo_ros_bumper.so">
+                <alwaysOn>true</alwaysOn>
+                <updateRate>10.0</updateRate>
+                <bumperTopicName>bumper_${side}${front}</bumperTopicName>
+                <frameName>world</frameName>
+            </plugin>
+        </sensor>
+    </gazebo>
+</xacro:macro>
+
+<xacro:property name="bumper_width" value="0.030"/>
+<xacro:property name="bumper_height" value="0.002"/>
+<xacro:property name="bumper_depth" value="0.030"/>
+<xacro:property name="collision_avoidance" value="0.001"/>
+<xacro:property name="t_height" value="0.029"/>
+<xacro:property name="t_depth" value="0.100"/>
+
+
+</robot>

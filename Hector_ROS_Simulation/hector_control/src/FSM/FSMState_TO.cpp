@@ -83,7 +83,6 @@ Eigen::MatrixXd FSMState_TO::readDataFromFile(const std::string& filePath) {
     }
 
     myFile.close();
-
     // Convert to Eigen type
     if (data.size() == 0) return Eigen::MatrixXd(); // Check for empty data
     size_t numRows = data.size();
@@ -94,7 +93,6 @@ Eigen::MatrixXd FSMState_TO::readDataFromFile(const std::string& filePath) {
             mat(i, j) = data[i][j];
         }
     }
-
     return mat.transpose(); 
 }
 

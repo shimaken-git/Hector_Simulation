@@ -5,6 +5,7 @@
 #include "../../include/common/FootSwingTrajectory.h"
 #include "../../include/common/cppTypes.h"
 #include "../../include/common/LegController.h"
+#include "./robot_select.h"
 
 
  /**
@@ -79,7 +80,17 @@ class swingLegController {
 
         // constants can be adjusted if needed
         const double _dt = 0.001;
-        const double footHeight = 0.1;    
+#ifdef _HECTOR_
+        const double footHeight = 0.15;        //足上げ高さ
+#else
+#ifdef _LAMBDA_
+        const double footHeight = 0.15;        //足上げ高さ
+#else
+#ifdef _LAMBDA_R2_
+        const double footHeight = 0.15;        //足上げ高さ
+#endif
+#endif
+#endif
 
         // utility functions
         double clamp(double val, double minVal, double maxVal) {

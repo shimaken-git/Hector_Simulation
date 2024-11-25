@@ -47,6 +47,9 @@ class IOInterface
         void zeroCmdPanel(){cmdPanel->setZero();}
         void setPassive(){cmdPanel->setPassive();}
         CmdPanel *cmdPanel;
+        bool contact[4];            //接地していたらtrue
+        bool bfr_contact[4];
+        int floatTime[4];           //contact pointが浮いている時間
 };
 
 #endif

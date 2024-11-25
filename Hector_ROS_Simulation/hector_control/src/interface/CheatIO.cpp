@@ -3,6 +3,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <csignal>
+#include "../../include/common/robot_select.h"
 
 inline void RosShutDown(int sig){
     ROS_INFO("ROS interface shutting down!");
@@ -22,7 +23,9 @@ CheatIO::CheatIO(std::string robot_name):IOInterface(), _subSpinner(1)
     usleep(3000);     //wait for subscribers start
     // initialize publisher
     initSend();   
+
     signal(SIGINT, RosShutDown);
+
     cmdPanel = new KeyBoard();
 }
 
@@ -71,6 +74,17 @@ void CheatIO::recvState(LowlevelState *state)
         state->position[i] = _highState.position[i];
         state->vWorld[i] = _highState.velocity[i];
     }
+#ifdef _HECTOR_
+    if(state->position[2] == 0) state->position[2] = 0.545;    //初回にゼロを返してしまうので固定値を入れる。（Hector用）
+#else
+#ifdef _LAMBDA_
+    if(state->position[2] == 0) state->position[2] = 0.290 + 0.049;    //初回にゼロを返してしまうので固定値を入れる。（wwlambda用）
+#else
+#ifdef _LAMBDA_R2_
+    if(state->position[2] == 0) state->position[2] = 0.335;    //初回にゼロを返してしまうので固定値を入れる。（wwlambda_r2用）
+#endif
+#endif
+#endif
     state->imu.quaternion[3] = _highState.imu.quaternion[3];
 }
 
@@ -99,6 +113,16 @@ void CheatIO::initRecv(){
     _servo_sub[7] = _nm.subscribe( "/" + _robot_name + "_gazebo/R_thigh_controller/state", 1, &CheatIO::RthighCallback, this);
     _servo_sub[8] = _nm.subscribe( "/" + _robot_name + "_gazebo/R_calf_controller/state", 1, &CheatIO::RcalfCallback, this);
     _servo_sub[9] = _nm.subscribe( "/" + _robot_name + "_gazebo/R_toe_controller/state", 1, &CheatIO::RtoeCallback, this);
+
+    _contact_sub[0] = _nm.subscribe("/bumper_LF", 1, &CheatIO::ContactLFCallback, this);
+    _contact_sub[1] = _nm.subscribe("/bumper_LB", 1, &CheatIO::ContactLBCallback, this);
+    _contact_sub[2] = _nm.subscribe("/bumper_RF", 1, &CheatIO::ContactRFCallback, this);
+    _contact_sub[3] = _nm.subscribe("/bumper_RB", 1, &CheatIO::ContactRBCallback, this);
+
+    // _contact_pub[0] = _nm.advertise<std_msgs::UInt8>( "/bumper_LF_int", 1);
+    // _contact_pub[1] = _nm.advertise<std_msgs::UInt8>( "/bumper_LB_int", 1);
+    // _contact_pub[2] = _nm.advertise<std_msgs::UInt8>( "/bumper_RF_int", 1);
+    // _contact_pub[3] = _nm.advertise<std_msgs::UInt8>( "/bumper_RB_int", 1);
 }
 
 void CheatIO::StateCallback(const gazebo_msgs::ModelStates & msg)
@@ -209,4 +233,52 @@ void CheatIO::RtoeCallback(const unitree_legged_msgs::MotorState& msg)
     _highState.motorState[9].q = msg.q;
     _highState.motorState[9].dq = msg.dq;
     _highState.motorState[9].tauEst = msg.tauEst;
+}
+
+void CheatIO::ContactLFCallback(const gazebo_msgs::ContactsState & msg)
+{
+    bfr_contact[0] = contact[0];
+    if(msg.states.size() != 0){
+        contact[0] = true;
+        floatTime[0] = 0;
+    }else{
+        contact[0] = false;
+        floatTime[0]++;
+    }
+}
+
+void CheatIO::ContactLBCallback(const gazebo_msgs::ContactsState & msg)
+{
+    bfr_contact[1] = contact[1];
+    if(msg.states.size() != 0){
+        contact[1] = true;
+        floatTime[1] = 0;
+    }else{
+        contact[1] = false;
+        floatTime[1]++;
+    }
+}
+
+void CheatIO::ContactRFCallback(const gazebo_msgs::ContactsState & msg)
+{
+    bfr_contact[2] = contact[2];
+    if(msg.states.size() != 0){
+        contact[2] = true;
+        floatTime[1] = 0;
+    }else{
+        contact[2] = false;
+        floatTime[1]++;
+    }
+}
+
+void CheatIO::ContactRBCallback(const gazebo_msgs::ContactsState & msg)
+{
+    bfr_contact[3] = contact[3];
+    if(msg.states.size() != 0){
+        contact[3] = true;
+        floatTime[1] = 0;
+    }else{
+        contact[3] = false;
+        floatTime[1]++;
+    }
 }

@@ -70,6 +70,14 @@ public:
     return _v;
   }
 
+  Vec3<T> getIniPos() {
+    return _p0;
+  }
+
+  Vec3<T> getFinPos() {
+    return _pf;
+  }
+
 private:
   Vec3<T> _p0, _pf, _p, _v;
   T _height;

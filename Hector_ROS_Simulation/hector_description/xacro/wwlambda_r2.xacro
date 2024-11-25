@@ -1,0 +1,561 @@
+<?xml version="1.0" ?>
+<robot name="hector_description" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:include filename="$(find hector_description)/xacro/wwlambda_const.xacro"/>
+    <xacro:include filename="$(find hector_description)/xacro/materials.xacro"/>
+    <xacro:include filename="$(find hector_description)/xacro/stairs.xacro"/>
+    <xacro:include filename="$(find hector_description)/xacro/gazebo.xacro"/>
+
+    <xacro:include filename="$(find hector_description)/xacro/bumper.xacro"/>
+
+    <!-- Rollover Protection mode will add an additional stick on the top, use "true" or "false" to switch it. -->
+    <xacro:property name="rolloverProtection" value="false"/>
+
+    <!-- Debug mode will hung up the robot, use "true" or "false" to switch it. -->
+    <xacro:if value="$(arg DEBUG)">
+        <link name="world"/>
+        <joint name="base_static_joint" type="fixed">
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <parent link="world"/>
+            <child link="base"/>
+        </joint>
+    </xacro:if> 
+
+    <link name="base">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.001 0.001 0.001"/>
+            </geometry>
+        </visual>
+    </link>
+
+    <joint name="floating_base" type="fixed">
+        <!-- <origin rpy="0 0 0" xyz="0 0 -0.042"/> -->
+        <origin rpy="0 0 0" xyz="0 0 -0.085"/>
+        <parent link="base"/>
+        <child link="trunk"/>
+    </joint>
+
+    <link name="trunk">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://hector_description/meshes/wwlambda/ww_lambda_waist_r2.stl" scale="1 1 1"/>
+            </geometry>
+            <material name="grey"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0.107"/>
+            <geometry>
+                <box size="0.062 0.172 0.084"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.001131 0 0.086906"/>
+            <mass value="0.672"/>
+            <inertia ixx="2193585.402e-9" 
+                     ixy="-31.775e-9" iyy="412257.108e-9" 
+                     ixz="-12830.536e-9" iyz="-30.175e-9" izz="2159649.914e-9"/>
+        </inertial>
+    </link>
+
+    <joint name="body_joint" type="fixed">
+        <parent link="trunk"/>
+        <child link="body"/>
+        <origin rpy="0 0 0" xyz="0 0 0.230"/>
+    </joint>
+    <link name="body">
+        <inertial>
+            <mass value="1.3"/>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <inertia ixx="3035947e-9" ixy="-1669e-9" ixz="2793e-9" iyy="2992228e-9" iyz="17720e-9" izz="3906372e-9"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.130 0.174 0.100"/>
+            </geometry>
+            <material name="red"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.130 0.174 0.100"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <xacro:if value="${(rolloverProtection == 'True')}">
+        <joint name="stick_joint" type="fixed">
+            <parent link="trunk"/>
+            <child link="stick_link"/>
+            <origin rpy="0 0 0" xyz="${0.18} 0 ${stick_length/2.0+0.08}"/>
+        </joint>
+
+        <link name="stick_link">
+            <visual>
+                <geometry>
+                    <cylinder length="${stick_length}" radius="${stick_radius}"/>
+                </geometry>
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <material name="white"/>
+            </visual>
+            <collision>
+                <geometry>
+                    <cylinder length="${stick_length}" radius="${stick_radius}"/>
+                </geometry>
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+            </collision>
+            <inertial>
+                <mass value="${stick_mass}"/>
+                <inertia
+                    ixx="${stick_mass / 2.0 * (stick_radius*stick_radius)}" ixy="0.0" ixz="0.0"
+                    iyy="${stick_mass / 12.0 * (3*stick_radius*stick_radius + stick_length*stick_length)}" iyz="0.0"
+                    izz="${stick_mass / 12.0 * (3*stick_radius*stick_radius + stick_length*stick_length)}"/>                   
+            </inertial>
+        </link>
+    </xacro:if> 
+
+    <joint name="imu_joint" type="fixed">
+        <parent link="trunk"/>
+        <child link="imu_link"/>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+    </joint>
+    <link name="imu_link">
+        <inertial>
+            <mass value="0.001"/>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.0001"/>
+        </inertial>
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.001 0.001 0.001"/>
+            </geometry>
+            <material name="red"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size=".001 .001 .001"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="L_hip_joint" type="revolute">
+        <origin rpy="0 0 0" xyz="0.0 0.053 0"/>
+        <parent link="trunk"/>
+        <child link="L_hip"/>
+        <axis xyz="0 0 1"/>
+        <dynamics damping="${damping}" friction="${friction}"/>
+        <limit effort="${koala_torque}" lower="${joint_min}" upper="${joint_max}" velocity="${joint_velocity}"/>
+    </joint>
+    <link name="L_hip">
+        <visual>
+            <origin rpy="0.0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://hector_description/meshes/wwlambda/ww_lambda_right_hip.stl" scale="1 1 1 "/>
+            </geometry>
+            <material name="orange"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.154 0.062 0.062"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0.000334 0.003935"/>
+            <mass value="0.652898"/>
+            <inertia ixx="534478.410e-9" 
+                     ixy="192.291e-9" iyy="2262361.698e-9" 
+                     ixz="-1.325e-9" iyz="5777.021e-9" izz="2094559.879e-9"/>
+        </inertial>
+    </link>
+    <joint name="L_hip2_joint" type="revolute">
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <parent link="L_hip"/>
+        <child link="L_hip2"/>
+        <axis xyz="1 0 0"/>
+        <dynamics damping="${damping}" friction="${friction}"/>
+        <limit effort="${koala_torque}" lower="${joint_min}" upper="${joint_max}" velocity="${joint_velocity}"/>
+    </joint>
+    <link name="L_hip2">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://hector_description/meshes/wwlambda/ww_lambda_right_hip_joint_r2.stl" scale="1 -1 1 "/>
+            </geometry>
+            <material name="brown"/>
+        </visual>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.0 0.0111622 -0.000255"/>
+            <mass value="0.404998"/>
+            <inertia ixx="289373.105e-9" 
+                     ixy="43.945e-9" iyy="243507.837e-9" 
+                     ixz="-31.242e-9" iyz="-1291.490e-9" izz="298143.715e-9"/>
+        </inertial>
+    </link>
+    <joint name="L_thigh_joint" type="revolute">
+        <origin rpy="0 ${thigh_angle} 0" xyz="0 0.040 0"/>
+        <parent link="L_hip2"/>
+        <child link="L_thigh"/>
+        <axis xyz="0 1 0"/>
+        <joint_properties damping="${damping}" friction="${friction}"/>
+        <limit effort="${koala_torque}" lower="${joint_min}" upper="${joint_max}" velocity="${joint_velocity}"/>
+    </joint>
+    <link name="L_thigh">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://hector_description/meshes/wwlambda/ww_lambda_right_thigh_r2.stl" scale="1 -1 1 "/>
+            </geometry>
+            <material name="grey"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0.011 -0.0762"/>
+            <geometry>
+                <box size="0.040 0.022 0.112"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.00044 -0.016322 -0.134420"/>
+            <mass value="0.366608"/>
+            <inertia ixx="786472.731e-9" 
+                     ixy="57.238e-9" iyy="678521.016e-9" 
+                     ixz="333.551e-9" iyz="-166135.332e-9" izz="208660.299e-9"/>
+        </inertial>
+    </link>
+    <joint name="L_calf_joint" type="revolute">
+        <!-- <origin rpy="0 ${calf_angle} 0" xyz="0 -0.0038 -0.1524"/> -->
+        <origin rpy="0 ${calf_angle} 0" xyz="0 -0.0238 -0.1524"/>
+        <parent link="L_thigh"/>
+        <child link="L_calf"/>
+        <axis xyz="0 1 0"/>
+        <joint_properties damping="${damping}" friction="${friction}"/>
+        <limit effort="${koala_torque}" lower="${joint_min}" upper="${joint_max}" velocity="${joint_velocity}"/>
+    </joint>
+    <link name="L_calf">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://hector_description/meshes/wwlambda/ww_lambda_right_shin_r2.stl" scale="1 -1 1 "/>
+            </geometry>
+            <material name="grey"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0.009 -0.0762"/>
+            <geometry>
+                <box size="0.030 0.024 0.112"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.0 -0.007683 -0.078768"/>
+            <mass value="0.056674"/>
+            <inertia ixx="165297.155e-9" 
+                     ixy="-0.046e-9" iyy="162576.784e-9" 
+                     ixz="-0.870e-9" iyz="222.311e-9" izz="8384.868e-9"/>
+        </inertial>
+    </link>
+    <joint name="L_toe_joint" type="revolute">
+        <origin rpy="0 ${toe_angle} 0" xyz="0 -0.0079 -0.1524"/>
+        <parent link="L_calf"/>
+        <child link="L_toe"/>
+        <axis xyz="0 1 0"/>
+        <joint_properties damping="${damping}" friction="${friction}"/>
+        <limit effort="${steadywin_torque}"  lower="${toe_joint_min}" upper="${toe_joint_max}" velocity="${joint_velocity}"/>
+    </joint>
+    <link name="L_toe">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://hector_description/meshes/wwlambda/ww_lambda_left_foot.stl" scale="1 1 1 "/>
+            </geometry>
+            <material name="green"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 -0.023"/>
+            <geometry>
+                <box size="0.100 0.030 0.012"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0.001619 -0.016022"/>
+            <mass value="0.049085"/>
+            <!-- <inertia ixx="7532.090e-9" 
+                     ixy="-0.005e-9" iyy="28428.656e-9" 
+                     ixz="0.037e-9" iyz="-1279.852e-9" izz="25997.217e-9"/> -->
+            <!-- バタつくのでHECTORの足データを持ってきた -->
+            <!-- <mass value="${toe_mass}"/> -->
+            <inertia
+                ixx="${toe_ixx}" ixy="${toe_ixy}" ixz="${toe_ixz}"
+                iyy="${toe_iyy}" iyz="${toe_iyz}"
+                izz="${toe_izz}"/>       
+        </inertial>
+    </link>
+
+    <joint name="R_hip_joint" type="revolute">
+        <origin rpy="0 0 0" xyz="0.0 -0.053 0"/>
+        <parent link="trunk"/>
+        <child link="R_hip"/>
+        <axis xyz="0 0 1"/>
+        <dynamics damping="${damping}" friction="${friction}"/>
+        <limit effort="${koala_torque}" lower="${joint_min}" upper="${joint_max}" velocity="${joint_velocity}"/>
+    </joint>
+    <link name="R_hip">
+        <visual>
+            <origin rpy="0.0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://hector_description/meshes/wwlambda/ww_lambda_right_hip.stl" scale="1 1 1"/>
+            </geometry>
+            <material name="orange"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.154 0.062 0.062"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0.000334 0.003935"/>
+            <mass value="0.652898"/>
+            <inertia ixx="534478.410e-9" 
+                     ixy="192.291e-9" iyy="2262361.698e-9" 
+                     ixz="-1.325e-9" iyz="5777.021e-9" izz="2094559.879e-9"/>
+        </inertial>
+    </link>
+    <joint name="R_hip2_joint" type="revolute">
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <parent link="R_hip"/>
+        <child link="R_hip2"/>
+        <axis xyz="1 0 0"/>
+        <dynamics damping="${damping}" friction="${friction}"/>
+        <limit effort="${koala_torque}" lower="${joint_min}" upper="${joint_max}" velocity="${joint_velocity}"/>
+    </joint>
+    <link name="R_hip2">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://hector_description/meshes/wwlambda/ww_lambda_right_hip_joint_r2.stl" scale="1 1 1"/>
+            </geometry>
+            <material name="brown"/>
+        </visual>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.0 -0.0111622 -0.000255"/>
+            <mass value="0.404998"/>
+            <inertia ixx="289373.105e-9" 
+                     ixy="-43.945e-9" iyy="243507.837e-9" 
+                     ixz="-31.242e-9" iyz="1291.490e-9" izz="298143.715e-9"/>
+        </inertial>
+    </link>
+    <joint name="R_thigh_joint" type="revolute">
+        <origin rpy="0 ${thigh_angle} 0" xyz="0 -0.040 0"/>
+        <parent link="R_hip2"/>
+        <child link="R_thigh"/>
+        <axis xyz="0 1 0"/>
+        <joint_properties damping="${damping}" friction="${friction}"/>
+        <limit effort="${koala_torque}" lower="${joint_min}" upper="${joint_max}" velocity="${joint_velocity}"/>
+    </joint>
+    <link name="R_thigh">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://hector_description/meshes/wwlambda/ww_lambda_right_thigh_r2.stl" scale="1 1 1"/>
+            </geometry>
+            <material name="grey"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 -0.011 -0.0762"/>
+            <geometry>
+                <box size="0.040 0.022 0.112"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.00044 0.016322 -0.134420"/>
+            <mass value="0.366608"/>
+            <inertia ixx="786472.731e-9" 
+                     ixy="-57.238e-9" iyy="678521.016e-9" 
+                     ixz="333.551e-9" iyz="166135.332e-9" izz="208660.299e-9"/>
+        </inertial>
+    </link>
+    <joint name="R_calf_joint" type="revolute">
+        <!-- <origin rpy="0 ${calf_angle} 0" xyz="0 0.0038 -0.1524"/> -->
+        <origin rpy="0 ${calf_angle} 0" xyz="0 0.0238 -0.1524"/>
+        <parent link="R_thigh"/>
+        <child link="R_calf"/>
+        <axis xyz="0 1 0"/>
+        <joint_properties damping="${damping}" friction="${friction}"/>
+        <limit effort="${koala_torque}" lower="${joint_min}" upper="${joint_max}" velocity="${joint_velocity}"/>
+    </joint>
+    <link name="R_calf">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://hector_description/meshes/wwlambda/ww_lambda_right_shin_r2.stl" scale="1 1 1"/>
+            </geometry>
+            <material name="grey"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 -0.009 -0.0762"/>
+            <geometry>
+                <box size="0.030 0.024 0.112"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0.0 0.007683 -0.078768"/>
+            <mass value="0.056674"/>
+            <inertia ixx="165297.155e-9" 
+                     ixy="0.046e-9" iyy="162576.784e-9" 
+                     ixz="-0.870e-9" iyz="-222.311e-9" izz="8384.868e-9"/>
+        </inertial>
+    </link>
+    <joint name="R_toe_joint" type="revolute">
+        <origin rpy="0 ${toe_angle} 0" xyz="0 0.0079 -0.1524"/>
+        <parent link="R_calf"/>
+        <child link="R_toe"/>
+        <axis xyz="0 1 0"/>
+        <joint_properties damping="${damping}" friction="${friction}"/>
+        <limit effort="${steadywin_torque}" lower="${toe_joint_min}" upper="${toe_joint_max}" velocity="${joint_velocity}"/>
+    </joint>
+    <link name="R_toe">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://hector_description/meshes/wwlambda/ww_lambda_right_foot.stl" scale="1 1 1"/>
+            </geometry>
+            <material name="green"/>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 -0.023"/>
+            <geometry>
+                <box size="0.100 0.030 0.012"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 -0.001757 -0.01608"/>
+            <mass value="0.052588"/>
+            <!-- <inertia ixx="8207.198e-9" 
+                     ixy="-0.005e-9" iyy="31374.088e-9" 
+                     ixz="-0.037e-9" iyz="1491.969e-9" izz="28656.920e-9"/> -->
+            <!-- バタつくのでHECTORの足データを持ってきた -->
+            <!-- <mass value="${toe_mass}"/> -->
+            <inertia
+                ixx="${toe_ixx}" ixy="${toe_ixy}" ixz="${toe_ixz}"
+                iyy="${toe_iyy}" iyz="${toe_iyz}"
+                izz="${toe_izz}"/>       
+        </inertial>
+    </link>
+
+    <transmission name="L_hip_tran">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="L_hip_joint">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="L_hip_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="L_hip2_tran">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="L_hip2_joint">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="L_hip2_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="L_thigh_tran">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="L_thigh_joint">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="L_thigh_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="L_calf_tran">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="L_calf_joint">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="L_calf_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="L_toe_tran">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="L_toe_joint">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="L_toe_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+
+    <transmission name="R_hip_tran">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="R_hip_joint">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="R_hip_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="R_hip2_tran">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="R_hip2_joint">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="R_hip2_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="R_thigh_tran">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="R_thigh_joint">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="R_thigh_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="R_calf_tran">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="R_calf_joint">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="R_calf_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="R_toe_tran">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="R_toe_joint">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="R_toe_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+
+    <xacro:bumper side="L" front="F" parent="L_toe" />
+    <xacro:bumper side="L" front="B" parent="L_toe" />
+    <xacro:bumper side="R" front="F" parent="R_toe" />
+    <xacro:bumper side="R" front="B" parent="R_toe" />
+
+
+
+    <!-- <xacro:stairs stairs="15" xpos="0" ypos="2.0" zpos="0" /> -->
+</robot>
+

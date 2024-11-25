@@ -3,7 +3,8 @@
 #include "../include/common/Math/orientation_tools.h"
 #include "ConvexMPCLocomotion.h"
 #include "convexMPC_interface.h"
-
+#include "../include/common/robot_select.h"
+#include <eigen3/Eigen/src/Geometry/EulerAngles.h>
 using namespace ori;
 using Eigen::Dynamic;
 
@@ -23,6 +24,9 @@ ConvexMPCLocomotion::ConvexMPCLocomotion(double _dt, int _iterations_between_mpc
     firstSwing[i] = true;
 
   foot_position.open("foot_pos.txt");
+
+  std::cout << "ConvexMPCLocomotion construct end." << std::endl;
+
 }
 
 /******************************************************************************************************/
@@ -47,20 +51,35 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
   Vec3<double> v_des_robot(stateCommand->data.stateDes[6], stateCommand->data.stateDes[7],0);
   Vec3<double> v_des_world;
 
+  // std::cout << "rBody eulerAngle :" << seResult.rBody.eulerAngles(0, 1, 2) << std::endl;
+  // std::cout << "rBody rotationMatrixToRPY :" << rotationMatrixToRPY(seResult.rBody) << std::endl;
+
+
   v_des_world = seResult.rBody.transpose() * v_des_robot;
   Vec3<double> v_robot = seResult.vWorld;
 
   world_position_desired[0] += dt * v_des_world[0];
   world_position_desired[1] += dt * v_des_world[1];
+#ifdef _HECTOR_
   world_position_desired[2] = 0.55; //.5;;;
-
+#else
+#ifdef _LAMBDA_
+  world_position_desired[2] = 0.292 + 0.049;   // wwlambda + PC
+#else
+#ifdef _LAMBDA_R2_
+  world_position_desired[2] = 0.335;   // wwlambda_r2 + PC
+#endif
+#endif
+#endif
   // get then foot location in world frame
   for (int i = 0; i < 2; i++)
   {
-    pFoot[i] = seResult.position + seResult.rBody.transpose() 
-    * (data._biped->getHipYawLocation(i) + data._legController->data[i].p);
+    pFoot[i] = seResult.position + seResult.rBody.transpose() * (data._biped->getHipYawLocation(i) + data._legController->data[i].p);
+    // std::cout << "pFoot[" << i << "] " << pFoot[i] << std::endl;
+    // std::cout << "seResult.position " << seResult.position << std::endl;
+    // std::cout << "getHipYawLocation " << seResult.rBody * (data._biped->getHipYawLocation(i) + data._legController->data[i].p) << std::endl; 
+    // std::cout << "data._legController->data[i].p " << data._legController->data[i].p << std::endl;
   }
-  // std::cout << "RBody: " << seResult.rBody << std::endl;
 
   // some first time initialization
   if (firstRun)
@@ -95,7 +114,17 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
     {
       pBody_des[0] = seResult.position[0];
       pBody_des[1] = seResult.position[1];
+#ifdef _HECTOR_
       pBody_des[2] = 0.55;
+#else
+#ifdef _LAMBDA_
+      pBody_des[2] = 0.292 + 0.049;   // wwlambda + PC
+#else
+#ifdef _LAMBDA_R2_
+      pBody_des[2] = 0.335;   // wwlambda_r2 + PC
+#endif
+#endif
+#endif
 
       vBody_des[0] = 0;
       vBody_des[0] = 0;
@@ -103,7 +132,7 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
 
     for (int i = 0; i < 2; i++)
     {
-      footSwingTrajectories[i].setHeight(0.05);
+      footSwingTrajectories[i].setHeight(0.1);                        //足上げ高さ？？？（変えても変わらない）
       footSwingTrajectories[i].setInitialPosition(pFoot[i]);
       footSwingTrajectories[i].setFinalPosition(pFoot[i]);
     }
@@ -130,41 +159,6 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
     {
       swingTimeRemaining[i] -= dt;
     }
-
-    // if (firstSwing[i])
-    // {
-
-      footSwingTrajectories[i].setHeight(0.1);
-      Vec3<double> offset(0, side_sign[i] * 0.0, -0.0);
-      // simple heuristic function
-      Vec3<double> pRobotFrame = (data._biped->getHipYawLocation(i) + offset);
- 
-      Vec3<double> des_vel;
-
-      des_vel[0] = stateCommand->data.stateDes(6);
-      des_vel[1] = stateCommand->data.stateDes(7);
-      des_vel[2] = stateCommand->data.stateDes(8);
-
-      Vec3<double> Pf = seResult.position +
-                        seResult.rBody.transpose() * pRobotFrame 
-                        + seResult.vWorld * swingTimeRemaining[i];
-
-      
-      double p_rel_max = 0.4;
-      double pfx_rel =  seResult.vWorld[0] * 0.5 * gait->_stance * dtMPC +
-                       0.02 * (seResult.vWorld[0] - v_des_world[0]);
-
-      double pfy_rel = seResult.vWorld[1] * 0.5 * gait->_stance * dtMPC +
-                       0.02 * (seResult.vWorld[1] - v_des_world[1]);
-      pfx_rel = fminf(fmaxf(pfx_rel, -p_rel_max), p_rel_max);
-      pfy_rel = fminf(fmaxf(pfy_rel, -p_rel_max), p_rel_max);
-      // std:: cout << "pfy_rel =" << pfy_rel << "\n";
-      Pf[0] += pfx_rel;
-      Pf[1] += pfy_rel; //+ interleave_y[i] * v_abs * interleave_gain;
-      Pf[2] = -0.0;
-
-      footSwingTrajectories[i].setFinalPosition(Pf);
-    // }
   }
 
   // calc gait
@@ -195,51 +189,15 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
 
   swing.updateSwingLeg(); // update swing leg controller
 
-
   for (int foot = 0; foot < 2; foot++)
   {
 
     double contactState = contactStates(foot);
     double swingState = swingStates(foot); 
-    std::cout << "swing " << foot << ": " << swingState << std::endl;
-    std::cout << "Contact " << foot << ": " << contactState << std::endl;
-    Vec3<double> pFootWorld;
-    
-    if (swingState > 0) // foot is in swing
-    {
-      // if (firstSwing[foot])
-      // {
-      //   firstSwing[foot] = false;
-      //   footSwingTrajectories[foot].setInitialPosition(pFoot[foot]);
-      // }
+    std::cout << "-----------------------" << std::endl;
+    std::cout << "leg:" << foot << ": Swing " << swingState << " : Contact " << contactState << std::endl;
 
-      // footSwingTrajectories[foot].computeSwingTrajectoryBezier(swingState, swingTimes[foot]);
-
-      // Vec3<double> pDesFootWorld = footSwingTrajectories[foot].getPosition().cast<double>();
-      // Vec3<double> vDesFootWorld = footSwingTrajectories[foot].getVelocity().cast<double>();
-      // double side = -1.0 ;
-      // if (foot == 1){
-      //   side = 1.0;
-      // }
-      // Vec3<double> hipOffset = {0, side*-0.02, -0.136};
-      // Vec3<double> pDesLeg = seResult.rBody * (pDesFootWorld - seResult.position) - hipOffset;
-      // Vec3<double> vDesLeg = seResult.rBody * (vDesFootWorld - seResult.vWorld);
-      // if (vDesLeg.hasNaN())
-      // {
-      //   vDesLeg << 0, 0, 0;
-      // }
-
-      // data._legController->commands[foot].feedforwardForce << 0, 0, 0 , 0 , 0 , 0;
-      // data._legController->commands[foot].pDes = pDesLeg;
-      // data._legController->commands[foot].vDes = vDesLeg;
-      // data._legController->commands[foot].kpCartesian = Kp;
-      // data._legController->commands[foot].kdCartesian = Kd;
-      // data._legController->commands[foot].kptoe = 5; // 0
-      // data._legController->commands[foot].kdtoe = 0.1;
-      se_contactState[foot] = contactState;
-    }
-
-    else if (contactState > 0) // foot is in stance
+    if (contactState > 0) // foot is in stance
     { 
       firstSwing[foot] = true;
       footSwingTrajectories[foot].computeSwingTrajectoryBezier(swingState, swingTimes[foot]);
@@ -247,7 +205,7 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
       Vec3<double> vDesFootWorld = footSwingTrajectories[foot].getVelocity().cast<double>();
       Vec3<double> pDesLeg = seResult.rBody * (pDesFootWorld - seResult.position) - data._biped->getHipYawLocation(foot);
       Vec3<double> vDesLeg = seResult.rBody * (vDesFootWorld - seResult.vWorld);
-      // std::cout << "RBody: " << seResult.rBody << std::endl;
+
       if (vDesLeg.hasNaN())
         {
          vDesLeg << 0, 0, 0;
@@ -263,9 +221,8 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
 
       data._legController->commands[foot].feedforwardForce = f_ff[foot];
 
-      se_contactState[foot] = contactState;
-
     }
+    se_contactState[foot] = contactState;
   }
 }
 
@@ -349,15 +306,25 @@ void ConvexMPCLocomotion::updateMPCIfNeeded(int *mpcTable, ControlFSMData &data,
     // Vec3<double> ori_des_world;
     ori_des_world << stateCommand->data.stateDes[3], stateCommand->data.stateDes[4], stateCommand->data.stateDes[5];    
 
-    double trajInitial[12] = {/*rpy_comp[0] + */stateCommand->data.stateDes[3],  // 0
+    double trajInitial[12] = {/*rpy_comp[0] + */stateCommand->data.stateDes[3],    // 0
                               /*rpy_comp[1] + */stateCommand->data.stateDes[4],    // 1
                               0.0,    // 2
                               xStart,                                   // 3
                               yStart,                                   // 4
+#ifdef _HECTOR_
                               0.55 ,   // 5
+#else
+#ifdef _LAMBDA_
+                              0.292 + 0.049 ,   // 5    // wwlambda + PC
+#else
+#ifdef _LAMBDA_R2_
+                              0.335 ,   // 5    // wwlambda_r2 + PC
+#endif
+#endif
+#endif
                               0,                                        // 6
                               0,                                        // 7
-                              stateCommand->data.stateDes[11],  // 8
+                              stateCommand->data.stateDes[11],          // 8
                               v_des_world[0],                           // 9
                               v_des_world[1],                           // 10
                               0};                                       // 11
@@ -398,17 +365,28 @@ void ConvexMPCLocomotion::updateMPCIfNeeded(int *mpcTable, ControlFSMData &data,
         //std::cout << "yaw traj" <<  trajAll[12*i + 2] << std::endl;
         }
       }
-      std::cout << "traj " << i << std::endl;
-      for (int j = 0; j < 12; j++) {
-        std::cout << trajAll[12 * i + j] << "  ";
-      }
-          std::cout<< " " <<std::endl;
+      // std::cout << "traj " << i << std::endl;
+      // for (int j = 0; j < 12; j++) {
+      //   std::cout << trajAll[12 * i + j] << "  ";
+      // }
+      //     std::cout<< " " <<std::endl;
 
     }
 
     //MPC Solver Setup
     dtMPC = dt * iterationsBetweenMPC;
-    setup_problem(dtMPC, horizonLength, 0.25, 500);
+#ifdef _HECTOR_
+    setup_problem(dtMPC, horizonLength, 0.25, 500);     // dt, horizon, mu, f_max
+#else
+#ifdef _LAMBDA_
+    // setup_problem(dtMPC, horizonLength, 0.25, 50);     // dt, horizon, mu, f_max
+    setup_problem(dtMPC, horizonLength, 0.25, 100);     // 胴体付き
+#else
+#ifdef _LAMBDA_R2_
+    setup_problem(dtMPC, horizonLength, 0.25, 100);     // 胴体付き
+#endif
+#endif
+#endif
     
     //Solve MPC
     Timer t_mpc_solve;
@@ -431,7 +409,6 @@ void ConvexMPCLocomotion::updateMPCIfNeeded(int *mpcTable, ControlFSMData &data,
       }
       GRF_R = - seResult.rBody * GRF;
       GRM_R = - seResult.rBody * GRM;
-      // std::cout << "RBody: " << seResult.rBody << std::endl;
 
       for (int i = 0; i < 3; i++){
         f(i) = GRF_R(i);
@@ -441,81 +418,3 @@ void ConvexMPCLocomotion::updateMPCIfNeeded(int *mpcTable, ControlFSMData &data,
     }
   }
 }
-
-/******************************************************************************************************/
-/******************************************************************************************************/
-
-  // void ConvexMPCLocomotion::GenerateTrajectory(int* mpcTable, ControlFSMData& data, bool omniMode, StateEstimate& _seResult){
-    
-  //   Vec3<double> v_des_world = _seResult.rBody.transpose() * v_des_robot;
-  //   const double max_pos_error = .15;
-  //   double xStart = world_position_desired[0];
-  //   double yStart = world_position_desired[1];
-
-  //   if(xStart - p[0] > max_pos_error) xStart = p[0] + max_pos_error;
-  //   if(p[0] - xStart > max_pos_error) xStart = p[0] - max_pos_error;
-
-  //   if(yStart - p[1] > max_pos_error) yStart = p[1] + max_pos_error;
-  //   if(p[1] - yStart > max_pos_error) yStart = p[1] - max_pos_error;
-
-  //   world_position_desired[0] = xStart;
-  //   world_position_desired[1] = yStart;
-
-  //   double trajInitial[12] = {ori_des_world[0],  // 0
-  //                             ori_des_world[1],    // 1
-  //                             0,    // 2
-  //                             0,                                   // 3
-  //                             0,                                   // 4
-  //                             0.5 ,   // 5
-  //                             0,                                        // 6
-  //                             0,                                        // 7
-  //                             stateCommand->data.stateDes[11],  // 8
-  //                             v_des_world[0],                           // 9
-  //                             v_des_world[1],                           // 10
-  //                             0};                                       // 11
-
-  //   for (int i = 0; i < horizonLength; i++)
-  //   {
-  //     for (int j = 0; j < 12; j++)
-  //       trajAll[12 * i + j] = trajInitial[j];
-
-  //     if(i == 0) // start at current position  TODO consider not doing this
-  //     {
-  //       trajAll[0] = seResult.rpy[0];
-  //       trajAll[1] = seResult.rpy[1];
-  //       trajAll[2] = seResult.rpy[2];
-  //       trajAll[3] = seResult.position[0];
-  //       trajAll[4] = seResult.position[1];
-  //       trajAll[5] = seResult.position[2];
-  //     }
-  //     else
-  //     {
-  //       if (v_des_world[0] == 0) {
-  //       trajAll[12*i + 3] = trajInitial[3] + i * dtMPC * v_des_world[0];
-  //       }
-  //       else{
-  //        trajAll[12*i + 3] = seResult.position[0] + i * dtMPC * v_des_world[0]; 
-  //       }
-  //       if (v_des_world[1] == 0) {
-  //       trajAll[12*i + 4] = trajInitial[4] + i * dtMPC * v_des_world[1];
-  //       }
-  //       else{
-  //        trajAll[12*i + 4] = seResult.position[1] + i * dtMPC * v_des_world[1]; 
-  //       }
-  //       if (stateCommand->data.stateDes[11] == 0){
-  //       trajAll[12*i + 4] = trajInitial[4];
-  //        }
-  //       else{
-  //       trajAll[12*i + 2] = yaw + i * dtMPC * stateCommand->data.stateDes[11];
-  //       //std::cout << "yaw traj" <<  trajAll[12*i + 2] << std::endl;
-  //       }
-  //     }
-  //     std::cout << "traj " << i << std::endl;
-  //     for (int j = 0; j < 12; j++) {
-  //       std::cout << trajAll[12 * i + j] << "  ";
-  //     }
-  //         std::cout<< " " <<std::endl;
-
-  //   }
-
-  // }

@@ -10,10 +10,12 @@
 #include "unitree_legged_msgs/MotorState.h"
 #include "unitree_legged_msgs/HighState.h"
 #include <gazebo_msgs/ModelStates.h>
+#include <gazebo_msgs/ContactsState.h>
 #include <geometry_msgs/WrenchStamped.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <tf/transform_broadcaster.h>
 #include <string>
+#include <std_msgs/UInt8.h>
 
 class CheatIO : public IOInterface
 {
@@ -25,11 +27,12 @@ class CheatIO : public IOInterface
         void sendCmd(const LowlevelCmd *cmd);
         void recvState(LowlevelState *state);
         ros::NodeHandle _nm;
-        ros::Subscriber _servo_sub[10], _state_sub;
+        ros::Subscriber _servo_sub[10], _state_sub, _contact_sub[4];
         ros::Publisher _servo_pub[10];
+        // ros::Publisher _contact_pub[4];
         unitree_legged_msgs::LowCmd _lowCmd;
         unitree_legged_msgs::HighState _highState;
-        ros::AsyncSpinner _subSpinner; 
+        ros::AsyncSpinner _subSpinner;
 
 
         std::string _robot_name;
@@ -37,6 +40,11 @@ class CheatIO : public IOInterface
         void initSend(); // initialize publishers
     
         void StateCallback(const gazebo_msgs::ModelStates & msg);
+
+        void ContactLFCallback(const gazebo_msgs::ContactsState & msg);
+        void ContactLBCallback(const gazebo_msgs::ContactsState & msg);
+        void ContactRFCallback(const gazebo_msgs::ContactsState & msg);
+        void ContactRBCallback(const gazebo_msgs::ContactsState & msg);
 
         void LhipCallback(const unitree_legged_msgs::MotorState& msg);
         void Lhip2Callback(const unitree_legged_msgs::MotorState& msg);
