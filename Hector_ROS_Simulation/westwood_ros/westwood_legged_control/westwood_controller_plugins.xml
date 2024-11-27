@@ -1,0 +1,8 @@
+<library path="lib/libwestwood_legged_control">
+    <class name="westwood_legged_control/UnitreeJointController" 
+           type="westwood_legged_control::UnitreeJointController"           
+           base_class_type="controller_interface::ControllerBase"/>
+        <description>
+            The westwood joint controller.
+        </description>
+</library>

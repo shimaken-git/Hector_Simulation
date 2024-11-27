@@ -1,0 +1,7 @@
+<launch>
+    <arg name="rname" default="laikago"/>
+    <param name="robot_name" value="$(arg rname)"/>
+
+    <!-- <node pkg="westwood_controller" type="westwood_servo" name="westwood_servo" respawn="true"/> -->
+
+</launch>
