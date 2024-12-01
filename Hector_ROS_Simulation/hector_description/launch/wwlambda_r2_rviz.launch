@@ -9,9 +9,19 @@
     <!-- <param name="rate" value="1000"/> -->
 
     <!-- send fake joint values -->
+    <group if="false">
     <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher">
-        <param name="use_gui" value="TRUE"/>
+        <param name="use_gui" value="true"/>
     </node>
+    </group>
+
+    <group if="true">
+    <rosparam file="$(find bear_actuator_ros)/config/lambda_leg_trajectory_controllers.yaml" command = "load"/>
+    <node name="controller_spawner" pkg="controller_manager"
+            type="spawner" respawn="false"
+            output="screen" ns="/"
+            args="joint_state_controller lambda_leg"/>
+    </group>
 
     <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
         <param name="publish_frequency" type="double" value="1000.0"/>

@@ -12,25 +12,25 @@ Use of this source code is governed by the MPL-2.0 license, see LICENSE.
 namespace westwood_legged_control 
 {
 
-    UnitreeJointController::UnitreeJointController(){
+    WestwoodJointController::WestwoodJointController(){
         memset(&lastCmd, 0, sizeof(westwood_legged_msgs::MotorCmd));
         memset(&lastState, 0, sizeof(westwood_legged_msgs::MotorState));
         memset(&servoCmd, 0, sizeof(ServoCmd));
     }
 
-    UnitreeJointController::~UnitreeJointController(){
+    WestwoodJointController::~WestwoodJointController(){
         sub_ft.shutdown();
         sub_cmd.shutdown();
     }
 
-    void UnitreeJointController::setTorqueCB(const geometry_msgs::WrenchStampedConstPtr& msg)
+    void WestwoodJointController::setTorqueCB(const geometry_msgs::WrenchStampedConstPtr& msg)
     {
         if(isHip) sensor_torque = msg->wrench.torque.x;
         else sensor_torque = msg->wrench.torque.y;
         // printf("sensor torque%f\n", sensor_torque);
     }
 
-    void UnitreeJointController::setCommandCB(const westwood_legged_msgs::MotorCmdConstPtr& msg)
+    void WestwoodJointController::setCommandCB(const westwood_legged_msgs::MotorCmdConstPtr& msg)
     {
         lastCmd.mode = msg->mode;
         lastCmd.q = msg->q;
@@ -45,7 +45,7 @@ namespace westwood_legged_control
     }
 
     // Controller initialization in non-realtime
-    bool UnitreeJointController::init(hardware_interface::EffortJointInterface *robot, ros::NodeHandle &n)
+    bool WestwoodJointController::init(hardware_interface::EffortJointInterface *robot, ros::NodeHandle &n)
     {
         isHip = false;
         isThigh = false;
@@ -86,8 +86,8 @@ namespace westwood_legged_control
         joint = robot->getHandle(joint_name);
 
         // Start command subscriber
-        sub_ft = n.subscribe(name_space + "/" +"joint_wrench", 1, &UnitreeJointController::setTorqueCB, this);
-        sub_cmd = n.subscribe("command", 20, &UnitreeJointController::setCommandCB, this);
+        sub_ft = n.subscribe(name_space + "/" +"joint_wrench", 1, &WestwoodJointController::setTorqueCB, this);
+        sub_cmd = n.subscribe("command", 20, &WestwoodJointController::setCommandCB, this);
 
         // pub_state = n.advertise<westwood_legged_msgs::MotorState>(name_space + "/state", 20); 
         // Start realtime state publisher
@@ -97,24 +97,24 @@ namespace westwood_legged_control
         return true;
     }
 
-    void UnitreeJointController::setGains(const double &p, const double &i, const double &d, const double &i_max, const double &i_min, const bool &antiwindup)
+    void WestwoodJointController::setGains(const double &p, const double &i, const double &d, const double &i_max, const double &i_min, const bool &antiwindup)
     {
         pid_controller_.setGains(p,i,d,i_max,i_min,antiwindup);
     }
 
-    void UnitreeJointController::getGains(double &p, double &i, double &d, double &i_max, double &i_min, bool &antiwindup)
+    void WestwoodJointController::getGains(double &p, double &i, double &d, double &i_max, double &i_min, bool &antiwindup)
     {
         pid_controller_.getGains(p,i,d,i_max,i_min,antiwindup);
     }
 
-    void UnitreeJointController::getGains(double &p, double &i, double &d, double &i_max, double &i_min)
+    void WestwoodJointController::getGains(double &p, double &i, double &d, double &i_max, double &i_min)
     {
         bool dummy;
         pid_controller_.getGains(p,i,d,i_max,i_min,dummy);
     }
 
     // Controller startup in realtime
-    void UnitreeJointController::starting(const ros::Time& time)
+    void WestwoodJointController::starting(const ros::Time& time)
     {
         // lastCmd.Kp = 0;
         // lastCmd.Kd = 0;
@@ -133,7 +133,7 @@ namespace westwood_legged_control
     }
 
     // Controller update loop in realtime
-    void UnitreeJointController::update(const ros::Time& time, const ros::Duration& period)
+    void WestwoodJointController::update(const ros::Time& time, const ros::Duration& period)
     {
         double currentPos, currentVel, calcTorque;
         lastCmd = *(command.readFromRT());
@@ -205,21 +205,21 @@ namespace westwood_legged_control
     }
 
     // Controller stopping in realtime
-    void UnitreeJointController::stopping(){}
+    void WestwoodJointController::stopping(){}
 
-    void UnitreeJointController::positionLimits(double &position)
+    void WestwoodJointController::positionLimits(double &position)
     {
         if (joint_urdf->type == urdf::Joint::REVOLUTE || joint_urdf->type == urdf::Joint::PRISMATIC)
             clamp(position, joint_urdf->limits->lower, joint_urdf->limits->upper);
     }
 
-    void UnitreeJointController::velocityLimits(double &velocity)
+    void WestwoodJointController::velocityLimits(double &velocity)
     {
         if (joint_urdf->type == urdf::Joint::REVOLUTE || joint_urdf->type == urdf::Joint::PRISMATIC)
             clamp(velocity, -joint_urdf->limits->velocity, joint_urdf->limits->velocity);
     }
 
-    void UnitreeJointController::effortLimits(double &effort)
+    void WestwoodJointController::effortLimits(double &effort)
     {
         if (joint_urdf->type == urdf::Joint::REVOLUTE || joint_urdf->type == urdf::Joint::PRISMATIC)
             clamp(effort, -joint_urdf->limits->effort, joint_urdf->limits->effort);
@@ -228,4 +228,4 @@ namespace westwood_legged_control
 } // namespace
 
 // Register controller to pluginlib
-PLUGINLIB_EXPORT_CLASS(westwood_legged_control::UnitreeJointController, controller_interface::ControllerBase);
+PLUGINLIB_EXPORT_CLASS(westwood_legged_control::WestwoodJointController, controller_interface::ControllerBase);

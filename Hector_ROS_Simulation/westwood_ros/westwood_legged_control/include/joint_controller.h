@@ -12,8 +12,6 @@ Use of this source code is governed by the MPL-2.0 license, see LICENSE.
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread/condition.hpp>
 #include <realtime_tools/realtime_publisher.h>
-#include <hardware_interface/joint_command_interface.h>
-#include <controller_interface/controller.h>
 #include <std_msgs/Float64.h>
 #include <realtime_tools/realtime_buffer.h>
 #include <controller_interface/controller.h>
@@ -30,7 +28,7 @@ Use of this source code is governed by the MPL-2.0 license, see LICENSE.
 
 namespace westwood_legged_control
 {
-    class UnitreeJointController: public controller_interface::Controller<hardware_interface::EffortJointInterface>
+    class WestwoodJointController: public controller_interface::Controller<hardware_interface::EffortJointInterface>
     {
 private:
         hardware_interface::JointHandle joint;
@@ -51,8 +49,8 @@ public:
         westwood_legged_msgs::MotorState lastState;
         ServoCmd servoCmd;
 
-        UnitreeJointController();
-        ~UnitreeJointController();
+        WestwoodJointController();
+        ~WestwoodJointController();
         virtual bool init(hardware_interface::EffortJointInterface *robot, ros::NodeHandle &n);
         virtual void starting(const ros::Time& time);
         virtual void update(const ros::Time& time, const ros::Duration& period);

@@ -53,6 +53,7 @@ namespace unitree_legged_control
         // rqtTune = false;
         sensor_torque = 0;
         name_space = n.getNamespace();
+        ROS_INFO("name space : %s", name_space.c_str());
         if (!n.getParam("joint", joint_name)){
             ROS_ERROR("No joint given in namespace: '%s')", n.getNamespace().c_str());
             return false;
@@ -137,6 +138,8 @@ namespace unitree_legged_control
     {
         double currentPos, currentVel, calcTorque;
         lastCmd = *(command.readFromRT());
+
+        ROS_INFO("update %s", joint_name.c_str());
 
         // set command data
         if(lastCmd.mode == PMSM) {

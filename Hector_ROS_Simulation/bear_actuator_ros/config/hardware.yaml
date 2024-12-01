@@ -1,0 +1,79 @@
+row_joint:
+  joint1:
+    ID: 1
+  joint2:
+    ID: 3
+  joint3:
+    ID: 2
+  joint4:
+    ID: 6
+  joint5:
+    ID: 5
+  joint6:
+    ID: 11
+  joint7:
+    ID: 8
+  joint8:
+    ID: 7
+  joint9:
+    ID: 9
+  joint10:
+    ID: 10
+
+robot_joint:
+  L_hip_joint:
+    joint:
+      - name: joint1
+        coeff: 1.0
+  L_hip2_joint:
+    joint:
+      - name: joint2
+        coeff: -0.5
+      - name: joint3
+        coeff: 0.5
+  L_thigh_joint:
+    joint:
+      - name: joint2
+        coeff: 0.5
+      - name: joint3
+        coeff: 0.5
+  L_calf_joint:
+    joint:
+      - name: joint2
+        coeff: -0.5
+      - name: joint3
+        coeff: -0.5
+      - name: joint4
+        coeff: 1
+  L_toe_joint:
+    joint:
+      - name: joint5
+        coeff: 1
+  R_hip_joint:
+    joint:
+      - name: joint6
+        coeff: 1
+  R_hip2_joint:
+    joint:
+      - name: joint7
+        coeff: -0.5
+      - name: joint8
+        coeff: 0.5
+  R_thigh_joint:
+    joint:
+      - name: joint7
+        coeff: -0.5
+      - name: joint8
+        coeff: -0.5
+  R_calf_joint:
+    joint:
+      - name: joint7
+        coeff: 0.5
+      - name: joint8
+        coeff: 0.5
+      - name: joint9
+        coeff: -1.0
+  R_toe_joint:
+    joint:
+      - name: joint10
+        coeff: -1.0

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="robot_description"
+    command="$(find xacro)/xacro --inorder '$(find open_manipulator_hw)/urdf/gorosuke_arm.urdf'"/>
+
+  <group if="true">
+  <rosparam file="$(find open_manipulator_hw)/config/gorosuke_arm_trajectory_controllers.yaml" command = "load"/>
+  <node name="controller_spawner" pkg="controller_manager"
+        type="spawner" respawn="false"
+        output="screen" ns="/"
+        args="joint_state_controller arm_controller"/>
+  </group>
+
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen"/>
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find open_manipulator_hw)/rviz/rviz.rviz" />
+
+</launch>
