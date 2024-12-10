@@ -179,78 +179,84 @@ def leg_control():
             print(rot.as_euler('xyz', degrees=True))
             print(rot.as_euler('xyz'))
 
+        if command == "standrpy" :   # set stand pose with roll pitch and yaw    > standrpy y z roll pitch yaw [-0.1 > z > -0.32]
+            # if len(inp_list) == 6 and float(inp_list[2]) < -0.1:
+            # tgt_y = float(inp_list[1])
+            # tgt_z = float(inp_list[2])
+            # tgt_r = float(inp_list[3])
+            # tgt_p = float(inp_list[4])
+            # tgt_yw = float(inp_list[5])
+            tgt_y = 0.0
+            tgt_z = 0.0
+            tgt_r = 0.0
+            tgt_p = 0.0
+            tgt_yw = 0.0
+            ljoint, lpoints, lrots, rjoint, rpoints, rrots = get_present_pos()
+            print("left")
+            print(lpoints[4])
+            rot = Rotation.from_matrix(lrots[4])
+            print(rot.as_matrix())
+            print(rot.as_euler('xyz', degrees=True))
+            print("right")
+            print(rpoints[4])
+            rot = Rotation.from_matrix(rrots[4])
+            print(rot.as_matrix())
+            print(rot.as_euler('xyz', degrees=True))
+            print("tgt_r", tgt_r)
+            print("tgt_p", tgt_p)
+            print("tgt_yw", tgt_yw)
+
+            t_roll = np.matrix([[1, 0, 0], \
+                        [0, np.cos(tgt_r), -np.sin(tgt_r)], \
+                        [0, np.sin(tgt_r), np.cos(tgt_r)]])
+            t_pitch = np.matrix([[np.cos(tgt_p), 0, np.sin(tgt_p)], \
+                        [0, 1, 0], \
+                        [-np.sin(tgt_p), 0, np.cos(tgt_p)]])
+            t_yaw = np.matrix([[np.cos(tgt_yw), -np.sin(tgt_yw), 0], \
+                        [np.sin(tgt_yw), np.cos(tgt_yw), 0], \
+                        [0, 0, 1]])
+            body_pos_l = np.matrix([[0.0], [0.053], [0.0]])
+            t_pos = np.matrix([[0.0], [0.053+tgt_y], [tgt_z]])
+            print("left  : ", t_pos)
+            t_pos = t_yaw.T * t_pitch.T * t_roll.T * t_pos
+            t_pos = t_pos - body_pos_l
+            print("left roll  : ", t_pos)
+            t_rot = t_yaw * t_pitch.T
+            rot = Rotation.from_matrix(t_rot)
+            print(rot.as_euler('xyz'))
+            joint_l, res_l = ik_jac(ljoint, t_pos, t_rot)
+
+            body_pos_r = np.matrix([[0.0], [-0.053], [0.0]])
+            t_pos = np.matrix([[0.0], [-0.053-tgt_y], [tgt_z]])
+            print("right : ", t_pos)
+            t_pos = t_yaw.T * t_pitch.T * t_roll.T * t_pos
+            t_pos = t_pos - body_pos_r
+            print("right pitch : ", t_pos)
+            t_rot = t_yaw * t_pitch.T
+            rot = Rotation.from_matrix(t_rot)
+            print(rot.as_euler('xyz'))
+            joint_r, res_r = ik_jac(rjoint, t_pos, t_rot)
+
+            joint_publish(joint_l, joint_r)
+
+            time.sleep(1.0)
+            ljoint, lpoints, lrots, rjoint, rpoints, rrots = get_present_pos()
+            print("left")
+            print(lpoints[4])
+            rot = Rotation.from_matrix(lrots[4])
+            print(rot.as_matrix())
+            print(rot.as_euler('xyz', degrees=True))
+            print(rot.as_euler('xyz'))
+
+            print("right")
+            print(rpoints[4])
+            rot = Rotation.from_matrix(rrots[4])
+            print(rot.as_matrix())
+            print(rot.as_euler('xyz', degrees=True))
+            print(rot.as_euler('xyz'))
+        
         inp_list = ["none", 0, 0, 0, 0]
-        if inp_list[0] == "standrpy" :   # set stand pose with roll pitch and yaw    > standrpy y z roll pitch yaw [-0.1 > z > -0.32]
-            if len(inp_list) == 6 and float(inp_list[2]) < -0.1:
-                tgt_y = float(inp_list[1])
-                tgt_z = float(inp_list[2])
-                tgt_r = float(inp_list[3])
-                tgt_p = float(inp_list[4])
-                tgt_yw = float(inp_list[5])
-                ljoint, lpoints, lrots, rjoint, rpoints, rrots = get_present_pos()
-                print("left")
-                print(lpoints[4])
-                rot = Rotation.from_matrix(lrots[4])
-                print(rot.as_matrix())
-                print(rot.as_euler('xyz', degrees=True))
-                print("right")
-                print(rpoints[4])
-                rot = Rotation.from_matrix(rrots[4])
-                print(rot.as_matrix())
-                print(rot.as_euler('xyz', degrees=True))
-                print("tgt_r", tgt_r)
-                print("tgt_p", tgt_p)
-                print("tgt_yw", tgt_yw)
-
-                t_roll = np.matrix([[1, 0, 0], \
-                            [0, np.cos(tgt_r), -np.sin(tgt_r)], \
-                            [0, np.sin(tgt_r), np.cos(tgt_r)]])
-                t_pitch = np.matrix([[np.cos(tgt_p), 0, np.sin(tgt_p)], \
-                            [0, 1, 0], \
-                            [-np.sin(tgt_p), 0, np.cos(tgt_p)]])
-                t_yaw = np.matrix([[np.cos(tgt_yw), -np.sin(tgt_yw), 0], \
-                            [np.sin(tgt_yw), np.cos(tgt_yw), 0], \
-                            [0, 0, 1]])
-                body_pos_l = np.matrix([[0.0], [0.053], [0.0]])
-                t_pos = np.matrix([[0.0], [0.053+tgt_y], [tgt_z]])
-                print("left  : ", t_pos)
-                t_pos = t_yaw.T * t_pitch.T * t_roll.T * t_pos
-                t_pos = t_pos - body_pos_l
-                print("left roll  : ", t_pos)
-                t_rot = t_yaw * t_pitch.T
-                rot = Rotation.from_matrix(t_rot)
-                print(rot.as_euler('xyz'))
-                joint_l, res_l = ik_jac(ljoint, t_pos, t_rot)
-
-                body_pos_r = np.matrix([[0.0], [-0.053], [0.0]])
-                t_pos = np.matrix([[0.0], [-0.053-tgt_y], [tgt_z]])
-                print("right : ", t_pos)
-                t_pos = t_yaw.T * t_pitch.T * t_roll.T * t_pos
-                t_pos = t_pos - body_pos_r
-                print("right pitch : ", t_pos)
-                t_rot = t_yaw * t_pitch.T
-                rot = Rotation.from_matrix(t_rot)
-                print(rot.as_euler('xyz'))
-                joint_r, res_r = ik_jac(rjoint, t_pos, t_rot)
-
-                #publish
-
-                time.sleep(1.0)
-                ljoint, lpoints, lrots, rjoint, rpoints, rrots = get_present_pos()
-                print("left")
-                print(lpoints[4])
-                rot = Rotation.from_matrix(lrots[4])
-                print(rot.as_matrix())
-                print(rot.as_euler('xyz', degrees=True))
-                print(rot.as_euler('xyz'))
-
-                print("right")
-                print(rpoints[4])
-                rot = Rotation.from_matrix(rrots[4])
-                print(rot.as_matrix())
-                print(rot.as_euler('xyz', degrees=True))
-                print(rot.as_euler('xyz'))
-        elif inp_list[0] == "bending" :    # move stand pose    > bending y z time [-0.1 > z > -0.32]
+        if inp_list[0] == "bending" :    # move stand pose    > bending y z time [-0.1 > z > -0.32]
             if len(inp_list) == 4 and float(inp_list[2]) < -0.1:
                 tgt_y = float(inp_list[1])
                 tgt_z = float(inp_list[2])
