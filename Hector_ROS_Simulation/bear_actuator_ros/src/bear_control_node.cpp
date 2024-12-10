@@ -30,7 +30,7 @@ void timerCallback(bear_actuator_ros::HardwareInterface &hardware_interface,
 
   hardware_interface.read();
   cm.update(ros::Time::now(), elapsed_time);
-  // hardware_interface.write();
+  hardware_interface.write();
   if(torque_cmd){
     hardware_interface.torque(torque);
     torque_cmd = false;

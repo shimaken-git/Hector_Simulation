@@ -12,6 +12,9 @@ project(bear_actuator_ros)
 find_package(catkin REQUIRED 
   COMPONENTS
     roscpp
+    rospy
+    std_msgs
+    sensor_msgs
     controller_manager
     hardware_interface
 )
@@ -69,14 +72,18 @@ include_directories(
 )
 
 add_library(cbear OBJECT ${SOURCES})
+add_library(gim OBJECT src/gim/gim.cpp)
+
 
 add_executable(bear_control_node src/bear_control_node.cpp src/hardware_interface.cpp)
 add_dependencies(bear_control_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(bear_control_node ${catkin_LIBRARIES} ${YAML_CPP_LIBRARIES} cbear)
+target_link_libraries(bear_control_node ${catkin_LIBRARIES} ${YAML_CPP_LIBRARIES} cbear gim)
 
 add_executable(sample_main src/app/sample_main/sample_main.cpp)
 target_link_libraries(sample_main ${catkin_LIBRARIES} cbear)
 
+add_executable(gim_calibration src/gim/gim_calibration.cpp)
+target_link_libraries(gim_calibration ${catkin_LIBRARIES} gim)
 
 ################################################################################
 # Install

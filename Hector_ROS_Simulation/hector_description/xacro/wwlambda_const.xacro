@@ -19,9 +19,12 @@
     <xacro:property name="joint_min" value="-3.14"/>
     <xacro:property name="toe_joint_max" value="1.75"/>
     <xacro:property name="toe_joint_min" value="-1.75"/>
-    <xacro:property name="thigh_angle" value="0.785398163"/>
-    <xacro:property name="calf_angle" value="-1.570796327"/>
-    <xacro:property name="toe_angle" value="0.785398163"/>
+    <!-- <xacro:property name="thigh_angle" value="0.785398163"/> -->
+    <!-- <xacro:property name="calf_angle" value="-1.570796327"/> -->
+    <!-- <xacro:property name="toe_angle" value="0.785398163"/> -->
+    <xacro:property name="thigh_angle" value="0.0"/>
+    <xacro:property name="calf_angle" value="0.0"/>
+    <xacro:property name="toe_angle" value="0.0"/>
 
 
     <!-- trunk value -->

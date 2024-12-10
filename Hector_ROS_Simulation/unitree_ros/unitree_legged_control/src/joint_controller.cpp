@@ -139,8 +139,6 @@ namespace unitree_legged_control
         double currentPos, currentVel, calcTorque;
         lastCmd = *(command.readFromRT());
 
-        ROS_INFO("update %s", joint_name.c_str());
-
         // set command data
         if(lastCmd.mode == PMSM) {
             servoCmd.pos = lastCmd.q;

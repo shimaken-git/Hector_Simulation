@@ -19,13 +19,17 @@
 #include "bear_actuator_ros/hardware_interface.h"
 #include "cbear/bear_sdk.h"
 #include "cbear/bear_macro.h"
+#include "gim/gim.hpp"
 #include <unistd.h>
 #include <math.h>
+#include <eigen3/Eigen/Core>
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/LU>
 
 namespace bear_actuator_ros
 {
 HardwareInterface::HardwareInterface(ros::NodeHandle nh, ros::NodeHandle private_nh)
-: node_handle_(nh), priv_node_handle_(private_nh), bear_handle("", 8000000)
+: node_handle_(nh), priv_node_handle_(private_nh), bear_handle("", 8000000), torque_constant(0.35)
 {
   /************************************************************
   ** Initialize ROS parameters
@@ -40,12 +44,60 @@ HardwareInterface::HardwareInterface(ros::NodeHandle nh, ros::NodeHandle private
   ************************************************************/
   registerActuatorInterfaces();
   makeActuatorList();
+  makeAJmatrix();
   registerControlInterfaces();
+}
+
+HardwareInterface::~HardwareInterface()
+{
+  for(auto act : bearActuator_){
+    if(bearValid_[act.first]){
+      bear_handle.SetTorqueEnable((uint8_t)act.second, 0);
+    }
+  }
+  uint8_t err;
+  for(auto act : gimActuator_){
+    if(gimValid_[act.first]){
+      gim_handle.Off((uint16_t)act.second, err);
+    }
+  }
+
+  bear_handle.disconnect();
+}
+
+void HardwareInterface::makeAJmatrix()
+{
+  int col = bearActuator_.size() + gimActuator_.size();
+  int row = robotJoint_.size();
+
+  Eigen::MatrixXd a2jMat(row, col);
+  a2jMat = Eigen::MatrixXd::Zero(row, col);
+
+  int r = 0;
+  for(auto i : robotJoint_){
+    std::cout << i.first << std::endl;
+    for(auto a : i.second){
+      int c;
+      if(bearActuator_.count(a.item_name))
+        c = idIndex_[bearActuator_[a.item_name]];
+      else if(gimActuator_.count(a.item_name))
+        c = gimIdIndex_[gimActuator_[a.item_name]];
+      std::cout << a.item_name << " " << a.value << " joint_index:" << c << " bear"<< std::endl;
+      a2jMat(r,c) = a.value;
+    }
+    r++;
+  }
+  std::cout << " a2jMat:" << std::endl << a2jMat << std::endl;
+
+  j2aMat = a2jMat.inverse();
+  std::cout << " j2aMat:" << std::endl << j2aMat << std::endl;
+
 }
 
 void HardwareInterface::makeActuatorList()
 {
   std::cout << "makeActuatorList()" << std::endl;
+  //make idList & idIndex_
   int index = 0;
   for(auto &act : bearActuator_){
     std::cout << act.first << " " << act.second << " " << bearValid_[act.first] << std::endl;
@@ -59,13 +111,36 @@ void HardwareInterface::makeActuatorList()
   std::cout << std::endl;
   std::cout << "idIndex_.size()=" << idIndex_.size() << std::endl;
   for(auto &a : idIndex_) std::cout << "ID "<< a.first << " index " << a.second << std::endl;
+
+  //make gimIdList & gimIdIndex_
+  // index = 0;
+  for(auto &act : gimActuator_){
+    std::cout << act.first << " " << act.second << " " << gimValid_[act.first] << std::endl;
+    if(gimValid_[act.first]){
+      gimIdList.push_back((uint16_t)act.second);
+    }
+    gimIdIndex_[act.second] = index++;
+  }
+  std::cout << "gimIdList.size()=" << gimIdList.size() << std::endl;
+  for(auto &id : gimIdList) std::cout << (int)id << " ";
+  std::cout << std::endl;
+  std::cout << "gimIdIndex_.size()=" << gimIdIndex_.size() << std::endl;
+  for(auto &a : gimIdIndex_) std::cout << "ID "<< a.first << " index " << a.second << std::endl;
   
+    //make convertA2Jset
   for(auto i : robotJoint_){
     std::cout << i.first << std::endl;
     std::map<uint32_t, double> s;
     for(auto j : i.second){
       std::cout << "  " << j.item_name << " " << j.value << std::endl;
-      int32_t idx = idIndex_[bearActuator_[j.item_name]];  //row joint index
+      int32_t idx;
+      // if(idIndex_.count(bearActuator_[j.item_name])){
+      if(bearActuator_.count(j.item_name)){
+        idx = idIndex_[bearActuator_[j.item_name]];  //row joint index
+      // }else if(gimIdIndex_.count(gimActuator_[j.item_name])){
+      }else if(gimActuator_.count(j.item_name)){
+        idx = gimIdIndex_[gimActuator_[j.item_name]];
+      }
       s[idx] = j.value;
     }
     convertA2Jset.push_back(s);
@@ -78,7 +153,13 @@ void HardwareInterface::makeActuatorList()
       std::cout << "  " << ite->first << " " << ite->second << std::endl;
     }
   }
-  write_add = std::vector<uint8_t>{bear_macro::GOAL_VELOCITY, bear_macro::GOAL_POSITION};
+  if(interface_ == "position"){
+    write_add = std::vector<uint8_t>{bear_macro::GOAL_POSITION};
+  }else if(interface_ == "velocity"){
+    write_add = std::vector<uint8_t>{bear_macro::GOAL_VELOCITY};
+  }else if(interface_ == "effort"){
+    write_add = std::vector<uint8_t>{bear_macro::GOAL_IQ};
+  }
   read_add = std::vector<uint8_t>{bear_macro::PRESENT_POSITION, bear_macro::PRESENT_VELOCITY, bear_macro::PRESENT_IQ};
 }
 
@@ -88,48 +169,36 @@ void HardwareInterface::registerActuatorInterfaces()
   bool result = false;
 
   result = initPort(port_name_, baud_rate_);
-  if (result == false)
-  {
+  if (result == false){
     ROS_ERROR("Please check USB port name");
     return;
   }
 
+  result = gimConnect();
+  if (result == false){
+    ROS_ERROR("Please check CAN interface");
+    return;
+  }
+
   result = getActuatorInfo(yaml_file_);
-  if (result == false)
-  {
+  if (result == false){
     ROS_ERROR("Please check YAML file");
     return;
   }
 
   result = loadActuators();
-  if (result == false)
-  {
+  if (result == false){
     ROS_ERROR("Please check Actuator ID or BaudRate");
     return;
   }
 
   result = initActuators();
-  if (result == false)
-  {
+  if (result == false){
     ROS_ERROR("Please check control table");
     return;
   }
 
-  result = initControlItems();
-  if (result == false)
-  {
-    ROS_ERROR("Please check control items");
-    return;
-  }
-
-  result = initSDKHandlers();
-  if (result == false)
-  {
-    ROS_ERROR("Failed to set Dynamixel SDK Handler");
-    return;
-  }
-
-
+  gimCalibration();
 }
 
 bool HardwareInterface::initPort(const std::string port_name, const uint32_t baud_rate)
@@ -151,6 +220,21 @@ bool HardwareInterface::initPort(const std::string port_name, const uint32_t bau
   return result;
 }
 
+bool HardwareInterface::gimConnect()
+{
+  int result;
+  char log[256];
+
+  result = gim_handle.connect();
+  if (result != 1)
+  {
+    ROS_ERROR("can connect fault");
+    return false;
+  }
+  ROS_INFO("can connect");
+  return true;
+}
+
 bool HardwareInterface::getActuatorInfo(const std::string yaml_file)
 {
   std::cout << "getActuatorInfo" << std::endl;
@@ -161,36 +245,69 @@ bool HardwareInterface::getActuatorInfo(const std::string yaml_file)
   if (actuator_yaml == NULL)
     return false;
 
-  // for (YAML::const_iterator it_file = actuator_yaml.begin(); it_file != actuator_yaml.end(); it_file++){
-  std::cout << actuator_yaml.size() << std::endl;
   if(actuator_yaml.size() == 2){
+    std::cout << "row_joint" << std::endl;
     YAML::Node block = actuator_yaml["row_joint"];
     for (YAML::const_iterator it_block = block.begin(); it_block != block.end(); it_block++){
       std::string name = it_block->first.as<std::string>();
-      // std::string name = it_file->first.as<std::string>();
       if (name.size() == 0)
       {
         continue;
       }
 
       YAML::Node item = block[name];
-      for (YAML::const_iterator it_item = item.begin(); it_item != item.end(); it_item++)
-      {
+      std::cout << "  name " << name << std::endl;
+      std::string type_name;
+      for (YAML::const_iterator it_item = item.begin(); it_item != item.end(); it_item++){
         std::string item_name = it_item->first.as<std::string>();
-        int32_t value = it_item->second.as<int32_t>();
-
-        if (item_name == "ID"){
-          bearActuator_[name] = value;
-          bearValid_[name] = true;
+        if(item_name == "type"){
+          type_name = it_item->second.as<std::string>();
+          break;
         }
-
-        ItemValue item_value = {item_name, value};
-        std::pair<std::string, ItemValue> info(name, item_value);
-
-        bearActuator_info_.push_back(info);
+      }
+      std::cout << "    type:" << type_name << std::endl;
+      if(type_name == "bear"){
+        std::vector<ItemValueD> info_vec;
+        for (YAML::const_iterator it_item = item.begin(); it_item != item.end(); it_item++){
+          std::string item_name = it_item->first.as<std::string>();
+          if (item_name == "ID"){
+            int32_t value = it_item->second.as<int32_t>();
+            bearActuator_[name] = value;
+            bearValid_[name] = true;
+            std::cout << "    " << item_name << ":" << value << std::endl;
+          }else if(item_name != "type"){
+            double value = it_item->second.as<double>();
+            ItemValueD item_value = {item_name, value};
+            // std::pair<std::string, ItemValueD> info(name, item_value);
+            // bearActuator_info_.push_back(info);
+            info_vec.push_back(item_value);
+            std::cout << "    " << item_name << ":" << value << std::endl;
+          }
+        }
+        bearActuator_info_[name] = info_vec;
+      }else if(type_name == "gim"){
+        std::vector<ItemValueD> info_vec;
+        for (YAML::const_iterator it_item = item.begin(); it_item != item.end(); it_item++)
+        {
+          std::string item_name = it_item->first.as<std::string>();
+          if (item_name == "ID"){
+            int32_t value = it_item->second.as<int32_t>();
+            gimActuator_[name] = value;
+            gimValid_[name] = true;
+            std::cout << "    " << item_name << ":" << value << std::endl;
+          }else if(item_name != "type"){
+            double value = it_item->second.as<double>();
+            ItemValueD item_value = {item_name, value};
+            info_vec.push_back(item_value);
+            // std::pair<std::string, ItemValueD> info(name, item_value);
+            // gimActuator_info_.push_back(info);
+          }
+          gimActuator_info_[name] = info_vec;
+        }
       }
     }
 
+    std::cout << "robot_joint" << std::endl;
     YAML::Node block2 = actuator_yaml["robot_joint"];
     for (YAML::const_iterator it_block = block2.begin(); it_block != block2.end(); it_block++){
       std::string name = it_block->first.as<std::string>();
@@ -238,6 +355,22 @@ bool HardwareInterface::loadActuators(void)
     }
   }
 
+  for (auto &act:gimActuator_)
+  {
+    // uint16_t model_number = 0;
+    uint16_t id = (uint16_t)act.second;
+    if ((bool)gim_handle.ping(id) == false)
+    {
+      ROS_ERROR("Can't find Actuator ID '%d' ", act.second);
+      result = false;
+      gimValid_[act.first] = false;
+    }else{
+      ROS_INFO("Name : %s, ID : %d", act.first.c_str(), act.second);
+      gim_handle.EntryActuator(id);
+      gim_handle.EntryZeropos(id, 0);
+    }
+  }
+
   return result;
 }
 
@@ -245,139 +378,52 @@ bool HardwareInterface::initActuators(void)
 {
   const char* log;
 
-  for (auto const& act:bearActuator_)
-  {
+  for(auto const& act:bearActuator_){
     std::cout << "torque off act " << act.first << " " << act.second << std::endl;
-    // dxl_wb_->torqueOff((uint8_t)act.second);
-
-    for (auto const& info:bearActuator_info_)
-    {
-      if (act.first == info.first)
-      {
-        if (info.second.item_name != "ID" && info.second.item_name != "Baud_Rate")
-        {
-          std::cout << "info.second.item_name " << info.second.item_name << std::endl;
-          // bool result = dxl_wb_->itemWrite((uint8_t)act.second, info.second.item_name.c_str(), info.second.value, &log);
-          // if (result == false)
-          // {
-          //   ROS_ERROR("%s", log);
-          //   ROS_ERROR("Failed to write value[%d] on items[%s] to Dynamixel[Name : %s, ID : %d]", info.second.value, info.second.item_name.c_str(), act.first.c_str(), act.second);
-          //   return false;
-          // }
+    if(bearValid_[act.first]){
+      if(!bear_handle.SetTorqueEnable((uint8_t)act.second, 0)){
+        ROS_ERROR("BEAR ACTUATOR ERROR %s %d", act.first.c_str(), act.second);
+      }
+    }
+    for(auto a : bearActuator_info_[act.first]){
+      std::cout << a.item_name << " " << a.value << std::endl;
+      if(a.item_name == "limit_i_max"){
+        if(!bear_handle.SetLimitIMax((uint8_t)act.second, a.value)){
+          ROS_ERROR("BEAR ACTUATOR ERROR %s %d %s %f", act.first.c_str(), act.second, a.item_name.c_str(), a.value);
         }
       }
     }
   }
 
+  uint8_t err;
+  for(auto const& act: gimActuator_){
+    std::cout << "gim actuator " << act.first << " " << act.second << std::endl;
+    if(gimValid_[act.first]){
+      if(gim_handle.Off((uint16_t)act.second, err) < 0){
+        ROS_ERROR("GIM ACTUATOR ERROR %s %d", act.first.c_str(), act.second);
+      }
+    } 
+  }
+
+
   // Torque On after setting up all servo
-  for (auto const& act:bearActuator_)
-    std::cout << "torque on act " << act.first << " " << act.second << std::endl;
-    // dxl_wb_->torqueOn((uint8_t)act.second);
-
+  for (auto const& act:bearActuator_){
+    if(bearValid_[act.first]){
+      std::cout << "torque on bear " << act.first << " " << act.second << std::endl;
+      if(!bear_handle.SetTorqueEnable((uint8_t)act.second, 1)){
+        ROS_ERROR("BEAR ACTUATOR ERROR %s %d", act.first.c_str(), act.second);
+      }
+    }
+  }
+  for(auto const& act: gimActuator_){
+    std::cout << "torque on gim " << act.first << " " << act.second << std::endl;
+    if(gimValid_[act.first]){
+      if(gim_handle.On((uint16_t)act.second, err) < 0){
+        ROS_ERROR("GIM ACTUATOR ERROR %s %d", act.first.c_str(), act.second);
+      }
+    } 
+  }
   return true;
-}
-
-bool HardwareInterface::initControlItems(void)
-{
-  bool result = false;
-  const char* log = NULL;
-
-  auto it = bearActuator_.begin();
-
-  //サーボのレジスタの登録かな？
-  
-  // const ControlItem *goal_position = dxl_wb_->getItemInfo(it->second, "Goal_Position");
-  // if (goal_position == NULL) return false;
-
-  // const ControlItem *goal_velocity = dxl_wb_->getItemInfo(it->second, "Goal_Velocity");
-  // if (goal_velocity == NULL)  goal_velocity = dxl_wb_->getItemInfo(it->second, "Moving_Speed");
-  // if (goal_velocity == NULL)  return false;
-
-  // const ControlItem *goal_current = dxl_wb_->getItemInfo(it->second, "Goal_Current");
-  // if (goal_current == NULL) goal_current = dxl_wb_->getItemInfo(it->second, "Present_Load");
-  // if (goal_current == NULL) return false;
-
-  // const ControlItem *present_position = dxl_wb_->getItemInfo(it->second, "Present_Position");
-  // if (present_position == NULL) return false;
-
-  // const ControlItem *present_velocity = dxl_wb_->getItemInfo(it->second, "Present_Velocity");
-  // if (present_velocity == NULL)  present_velocity = dxl_wb_->getItemInfo(it->second, "Present_Speed");
-  // if (present_velocity == NULL) return false;
-
-  // const ControlItem *present_current = dxl_wb_->getItemInfo(it->second, "Present_Current");
-  // if (present_current == NULL)  present_current = dxl_wb_->getItemInfo(it->second, "Present_Load");
-  // if (present_current == NULL) return false;
-
-  // control_items_["Goal_Position"] = goal_position;
-  // control_items_["Goal_Velocity"] = goal_velocity;
-  // control_items_["Goal_Current"] = goal_current;
-
-  // control_items_["Present_Position"] = present_position;
-  // control_items_["Present_Velocity"] = present_velocity;
-  // control_items_["Present_Current"] = present_current;
-
-  return true;
-}
-
-bool HardwareInterface::initSDKHandlers(void)
-{
-  bool result = false;
-  const char* log = NULL;
-
-  auto it = bearActuator_.begin();
-
-  // result = dxl_wb_->addSyncWriteHandler(control_items_["Goal_Position"]->address, control_items_["Goal_Position"]->data_length, &log);
-  // if (result == false)
-  // {
-  //   ROS_ERROR("%s", log);
-  //   return result;
-  // }
-  // else
-  // {
-  //   ROS_INFO("%s", log);
-  // }
-
-  // result = dxl_wb_->addSyncWriteHandler(control_items_["Goal_Velocity"]->address, control_items_["Goal_Velocity"]->data_length, &log);
-  // if (result == false)
-  // {
-  //   ROS_ERROR("%s", log);
-  //   return result;
-  // }
-  // else
-  // {
-  //   ROS_INFO("%s", log);
-  // }
-
-  // result = dxl_wb_->addSyncWriteHandler(control_items_["Goal_Current"]->address, control_items_["Goal_Current"]->data_length, &log);
-  // if (result == false)
-  // {
-  //   ROS_ERROR("%s", log);
-  //   return result;
-  // }
-  // else
-  // {
-  //   ROS_INFO("%s", log);
-  // }
-
-  // if (dxl_wb_->getProtocolVersion() == 2.0f)
-  // {
-  //   uint16_t start_address = std::min(control_items_["Present_Position"]->address, control_items_["Present_Current"]->address);
-
-  //   /* As some models have an empty space between Present_Velocity and Present Current, read_length is modified as below.*/
-  //   // uint16_t read_length = control_items_["Present_Position"]->data_length + control_items_["Present_Velocity"]->data_length + control_items_["Present_Current"]->data_length;
-  //   uint16_t read_length = control_items_["Present_Position"]->data_length + control_items_["Present_Velocity"]->data_length + control_items_["Present_Current"]->data_length+2;
-
-  //   result = dxl_wb_->addSyncReadHandler(start_address,
-  //                                         read_length,
-  //                                         &log);
-  //   if (result == false)
-  //   {
-  //     ROS_ERROR("%s", log);
-  //     return result;
-  //   }
-  // }
-
-  return result;
 }
 
 void HardwareInterface::registerControlInterfaces()
@@ -436,36 +482,60 @@ double HardwareInterface::convertActuator2Joint(int idx, double *data)
     j += data[i.first] * i.second;
   }
   return j;
-  // switch(idx){
-  //   case 0:
-  //     return(data[0]);
-  //   case 1:
-  //     return((data[2] - data[1])/2);
-  //   case 2:
-  //     return((data[1] + data[2])/2);
-  //   case 3:
-  //     return(data[3] - (data[1] + data[2])/2);
-  //   case 4:
-  //     return(data[4]);
-  //   case 5:
-  //     return(data[5]);
-  //   case 6:
-  //     return((data[7] - data[6])/2);
-  //   case 7:
-  //     return(-(data[6] + data[7])/2);
-  //   case 8:
-  //     return((data[6] + data[7])/2 - data[8]);
-  //   case 9:
-  //     return(-data[9]);
-  // }
+}
+
+void HardwareInterface::gimCalibration()
+{
+    for(auto a: gimActuator_){
+      if(gimValid_[a.first]){
+        int16_t id = a.second;
+        bool loop = true;
+        uint8_t err;
+        int32_t result;
+        float rpm;
+        float lmt;
+        std::vector<ItemValueD> param_vec = gimActuator_info_[a.first];
+        for(auto i : param_vec){
+          if(i.item_name == "cal_rpm"){
+            rpm = i.value;
+            break;
+          }
+        }
+        for(auto i : param_vec){
+          if(i.item_name == "limit"){
+            lmt = i.value;
+            break;
+          }
+        }
+        gim_handle.On(id, err);
+        gim_handle.SetVelocity(id, rpm, 10, err);
+        sleep(1.0);
+        while(loop){
+            if(gim_handle.GetVelocity(id,result) == 0) loop = false;
+        }
+        float limit = gim_handle.GetPosition(id, result);
+        gim_handle.SetVelocity(id, 0, 10, err);
+        float zeroPos = limit - lmt;
+        printf("id[%d] limit %f zeropos %f \r\n", id, limit, zeroPos);
+        gim_handle.Off(id, err);
+        gim_handle.SetZeroPosition(id, zeroPos, err);
+        gim_handle.EntryZeropos(id, zeroPos);
+        sleep(1.0);
+        gim_handle.On(id, err);
+        gim_handle.SetPosition(id, 0, 500, err);
+        sleep(1.0);
+        // gim_handle.Off(id, err);
+      }
+    }
 }
 
 void HardwareInterface::read()
 {
+  static bool first = true;
   bool result = false;
   const char* log = NULL;
 
-  uint8_t act_size = bearActuator_.size();
+  uint8_t act_size = robotJoint_.size();
   double get_position[act_size] = {0};
   double get_velocity[act_size] = {0};
   double get_current[act_size] = {0};
@@ -490,19 +560,26 @@ void HardwareInterface::read()
   if (result == false){
     ROS_ERROR("read error  bear_error=%d", err);
   }else{
-    std::cout << std::endl;
+    // std::cout << std::endl;
     // for(auto v : ret_vec_r) for(auto d : v) std::cout << d << std::endl;
     if(ret_vec_r.size() == idList.size()){
       for(int i = 0; i < ret_vec_r.size(); i++){
         int idx = idIndex_[idList[i]];
         get_position[idx] = ret_vec_r[i][1];
         get_velocity[idx] = ret_vec_r[i][2];
-        get_current[idx] = ret_vec_r[i][3];
+        get_current[idx] = ret_vec_r[i][3] * torque_constant;
         uint8_t err = ret_vec_r[i][4];  // error code
       }
     }else{
       ROS_ERROR("read data fault");
     }
+  }
+  for(auto id : gimIdList){
+    int32_t result;
+    int idx = gimIdIndex_[id];
+    get_position[idx] = gim_handle.GetPosition(id, result);
+    get_velocity[idx] = gim_handle.GetVelocity(id, result);
+    get_current[idx] = gim_handle.GetTorque(id, result);
   }
   for(uint8_t idx = 0; idx < act_size; idx++){
     // Position
@@ -511,69 +588,98 @@ void HardwareInterface::read()
     joints_[idx].velocity = convertActuator2Joint(idx, get_velocity);
     // Effort
     joints_[idx].effort = convertActuator2Joint(idx, get_current);
-    joints_[idx].position_command = joints_[idx].position;
     ROS_INFO("[%d] pos %f vel %f cur %f", idx, joints_[idx].position, joints_[idx].velocity, joints_[idx].effort);
+  }
+  if(first){
+    for(uint8_t idx = 0; idx < act_size; idx++){
+      joints_[idx].position_command = joints_[idx].position;
+    }
+    first = false;
   }
 }
 
 void HardwareInterface::write()
 {
   bool result = false;
-  // const char* log = NULL;
-  const char* log = "none";
 
-  uint8_t id_array[bearActuator_.size()];
-  uint8_t id_cnt = 0;
+  int col = bearActuator_.size() + gimActuator_.size();
+  int row = robotJoint_.size();
 
-  int32_t bearActuator_position[bearActuator_.size()];
-  int32_t bearActuator_velocity[bearActuator_.size()];
-  int32_t bearActuator_effort[bearActuator_.size()];
-
-  if (strcmp(interface_.c_str(), "position") == 0)
-  {
-    for (auto const& act:bearActuator_)
-    {
-      id_array[id_cnt] = (uint8_t)act.second;
-      // dynamixel_position[id_cnt] = dxl_wb_->convertRadian2Value((uint8_t)act.second, joints_[(uint8_t)act.second-1].position_command);
-
-      if (strcmp(act.first.c_str(), "gripper") == 0)
-        // dynamixel_position[id_cnt] = dxl_wb_->convertRadian2Value((uint8_t)act.second, joints_[(uint8_t)act.second-1].position_command * 150.0);
-      id_cnt ++;
+  Eigen::MatrixXd joint_data(col, 1);
+  for(int i = 0; i < col; i++) joint_data(i, 0) = joints_[i].position_command;
+  Eigen::MatrixXd actuator_data(col, 1);
+  actuator_data = j2aMat * joint_data;
+  // std::cout << "actuator_data " << actuator_data << std::endl;
+  if (strcmp(interface_.c_str(), "position") == 0){
+    std::vector<std::vector<float>> data;
+    for(auto id : idList){
+      int idx = idIndex_[id];
+      std::vector<float> _data;
+      _data.push_back(actuator_data(idx, 0));
+      data.push_back(_data);
     }
-    uint8_t sync_write_handler = 0; // 0: position, 1: velocity, 2: effort
-    // result = dxl_wb_->syncWrite(sync_write_handler, id_array, id_cnt, dynamixel_position, 1, &log);
+    if(!bear_handle.BulkWrite(idList, write_add, data)){
+      ROS_ERROR("BEAR ACTUATOR WRITE ERROR");
+    }
   }
-  else if (strcmp(interface_.c_str(), "effort") == 0)
-  {
-    for (auto const& act:bearActuator_)
-    {
-      id_array[id_cnt] = (uint8_t)act.second;
-      // dynamixel_effort[id_cnt] = dxl_wb_->convertCurrent2Value((uint8_t)act.second, joints_[(uint8_t)act.second-1].effort_command / (1.78e-03));
-
-      if (strcmp(act.first.c_str(), "gripper") == 0)
-        // dynamixel_position[id_cnt] = dxl_wb_->convertRadian2Value((uint8_t)act.second, joints_[(uint8_t)act.second-1].position_command * 150.0);
-      id_cnt ++;
+  else if (strcmp(interface_.c_str(), "effort") == 0){
+    std::vector<std::vector<float>> data;
+    for(auto id : idList){
+      int idx = idIndex_[id];
+      std::vector<float> _data;
+      _data.push_back(joints_[idx].effort_command);
+      data.push_back(_data);
     }
-    uint8_t sync_write_handler = 2; // 0: position, 1: velocity, 2: effort
-    // result = dxl_wb_->syncWrite(sync_write_handler, id_array, id_cnt, dynamixel_effort, 1, &log);
+    if(!bear_handle.BulkWrite(idList, write_add, data)){
+      ROS_ERROR("BEAR ACTUATOR WRITE ERROR");
+    }
   }
 
-  if (result == false)
-  {
-    ROS_ERROR("%s", log);
+  uint8_t err;
+  if (strcmp(interface_.c_str(), "position") == 0){
+    for(auto id : gimIdList){
+      int idx = gimIdIndex_[id];
+      if(gim_handle.SetPosition((uint16_t)id, actuator_data(idx, 0), 10, err) < 0){
+        ROS_ERROR("GIM ACTUATOR WRITE ERROR %d err:%d", id, err);
+      }
+    }
+  }
+  else if (strcmp(interface_.c_str(), "effort") == 0){
+    for(auto id : gimIdList){
+      int idx = gimIdIndex_[id];
+      if(gim_handle.SetPosition((uint16_t)id, joints_[idx].effort_command, 10, err) < 0){
+        ROS_ERROR("GIM ACTUATOR WRITE ERROR %d err:%d", id, err);
+      }
+    }
   }
 }
 
 void HardwareInterface::torque(bool torque)
 {
-  for (auto const& act:bearActuator_)
-  {
-    if(torque){
-      // dxl_wb_->torqueOn((uint8_t)act.second);
-    }else{
-      // dxl_wb_->torqueOff((uint8_t)act.second);
+  uint8_t err;
+  if(torque){
+    for (auto const& id : idList){
+      if(!bear_handle.SetTorqueEnable(id, 1)){
+        ROS_ERROR("BEAR ACTUATOR ERROR %d", id);
+      }
+    }
+    for(auto const& id : gimIdList){
+      if(gim_handle.On(id, err) < 0){
+        ROS_ERROR("GIM ACTUATOR ERROR %d", id);
+      }
+    }
+  }else{
+    for (auto const& id : idList){
+      if(!bear_handle.SetTorqueEnable(id, 0)){
+        ROS_ERROR("BEAR ACTUATOR ERROR %d", id);
+      }
+    }
+    for(auto const& id : gimIdList){
+      if(gim_handle.Off(id, err) < 0){
+        ROS_ERROR("GIM ACTUATOR ERROR %d", id);
+      }
     }
   }
 }
 
-} // namespace open_manipulator_hw
+}

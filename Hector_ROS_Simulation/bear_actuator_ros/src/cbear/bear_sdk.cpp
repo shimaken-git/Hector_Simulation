@@ -69,14 +69,31 @@ BEAR::BEAR(const char *portName, int baudrate)
   // connect();
 }
 
+BEAR::~BEAR()
+{
+  disconnect();
+}
+
 bool BEAR::connect(char *log) {
   if (portManager_.OpenPort()) {
     sprintf(log, "Success! Port opened!\n - Device Name: %s\n - Baudrate: %d\n\n", portName_, portManager_.GetBaudRate());
+    ///  効果ないけど一応残しておく
+    uint8_t packet[500];
+    int len = 500;
+    while(portManager_.ReadPort(packet, len) > 0){
+      printf("len=%d", len);
+    }
+    ///
     return true;
   } else {
     sprintf(log, "Failed to open port! [%s]\n", portName_);
   }
   return false;
+}
+
+void BEAR::disconnect()
+{
+  portManager_.ClosePort();
 }
 
 uint8_t BEAR::GetErrorCode() {

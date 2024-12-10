@@ -25,9 +25,14 @@
 #include <hardware_interface/joint_command_interface.h>
 #include <hardware_interface/joint_state_interface.h>
 #include <hardware_interface/robot_hw.h>
+#include <eigen3/Eigen/Core>
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/LU>
+
 
 #include "cbear/bear_sdk.h"
 #include "cbear/bear_macro.h"
+#include "gim/gim.hpp"
 
 typedef struct _ItemValue
 {
@@ -65,7 +70,7 @@ class HardwareInterface : public hardware_interface::RobotHW
 {
  public:
   HardwareInterface(ros::NodeHandle nh, ros::NodeHandle private_nh);
-  ~HardwareInterface() {}
+  ~HardwareInterface();
 
   void read();
   void write();
@@ -75,13 +80,14 @@ class HardwareInterface : public hardware_interface::RobotHW
   void registerActuatorInterfaces();
   void registerControlInterfaces();
   bool initPort(const std::string port_name, const uint32_t baud_rate);
+  bool gimConnect();
   bool getActuatorInfo(const std::string yaml_file);
   bool loadActuators(void);
   bool initActuators(void);
-  bool initControlItems(void);
-  bool initSDKHandlers(void);
   void makeActuatorList(void);
+  void makeAJmatrix(void);
   double convertActuator2Joint(int idx, double *data);
+  void gimCalibration();
 
   // ROS NodeHandle
   ros::NodeHandle node_handle_;
@@ -93,20 +99,34 @@ class HardwareInterface : public hardware_interface::RobotHW
   std::string yaml_file_;
   std::string interface_;
 
+  // bear actuator parameters
+  double torque_constant;
+
   // Variables
   
   bear::BEAR bear_handle;
   std::map<std::string, uint32_t> bearActuator_;    //row joint information
   std::map<std::string, bool> bearValid_;           //row joint valid information
-  std::map<std::string, std::vector<ItemValueD>> robotJoint_;    //robot joint information
+  // std::vector<std::pair<std::string, ItemValueD>> bearActuator_info_;
+  std::map<std::string, std::vector<ItemValueD>> bearActuator_info_;
   std::map<uint32_t, uint32_t> idIndex_;  // first:ID  second:Index
+
+  gim::GIM gim_handle;
+  std::map<std::string, uint32_t> gimActuator_;    //row joint information
+  std::map<std::string, bool> gimValid_;           //row joint valid information
+  // std::vector<std::pair<std::string, ItemValueD>> gimActuator_info_;
+  std::map<std::string, std::vector<ItemValueD>> gimActuator_info_;
+  std::map<uint16_t, uint32_t> gimIdIndex_;  // first:ID  second:Index
   std::vector<std::map<uint32_t, double>> convertA2Jset;  //rowJoint -> robotJoint coefficent set
   // std::map<std::string, const ControlItem*> control_items_;
-  std::vector<std::pair<std::string, ItemValue>> bearActuator_info_;
+  std::map<std::string, std::vector<ItemValueD>> robotJoint_;    //robot joint information
   std::vector<Joint> joints_;
   std::vector<uint8_t> idList;
+  std::vector<uint16_t> gimIdList;
   std::vector<uint8_t> write_add;
   std::vector<uint8_t> read_add;
+
+  Eigen::MatrixXd j2aMat;
 
   // ROS Control interfaces
   hardware_interface::JointStateInterface joint_state_interface_;

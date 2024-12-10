@@ -117,12 +117,12 @@ int PacketManager::WritePacket(PortManager *port, uint8_t *packet) {
 }
 
 int PacketManager::ReadPacket(PortManager *port, uint8_t *packet) {
-  int result{COMM_TX_FAIL};
+  int result{COMM_RX_FAIL};
 
   uint8_t checksum = 0;
   uint8_t rx_len = 0;
   uint8_t wait_len = 6; // [HEADER0, HEADER1, ID, LENGTH, ERROR, CHKSUM]
-  int16_t timeout = 1000;
+  uint32_t timeout = 100000;
   while (timeout-- > 0) {
     rx_len += port->ReadPort(&packet[rx_len], wait_len - rx_len);
 
@@ -181,13 +181,13 @@ int PacketManager::ReadPacket(PortManager *port, uint8_t *packet) {
   }
   port->in_use_ = false;
 
-  if(timeout == 0) result = COMM_RX_TIMEOUT;
+  if(timeout <= 0) result = COMM_RX_TIMEOUT;
 
 //  std::cout << "Packet to be read: " << std::endl;
 //  for (int a = 0; a < rx_len; a++)
 //    std::cout << int(packet[a]) << " ";
 //  std::cout << std::endl;
-
+  std::cout << "timeout " << timeout << std::endl;
   return result;
 }
 
@@ -258,8 +258,10 @@ int PacketManager::wrPacket(PortManager *port, uint8_t *wpacket, uint8_t *rpacke
   // Write packet
 //  BuildPacket(wpacket); // TODO: Make this modular
   result = WritePacket(port, wpacket);
-  if (result != COMM_SUCCESS)
+  if (result != COMM_SUCCESS){
+    std::cout << "wrPacket write error " << result << std::endl;
     return result;
+  }
 
   // TODO: Include timeout?
 
@@ -271,8 +273,9 @@ int PacketManager::wrPacket(PortManager *port, uint8_t *wpacket, uint8_t *rpacke
   if (result == COMM_SUCCESS && wpacket[PKT_ID] == rpacket[PKT_ID]) {
     if (error != 0)
       *error = (uint8_t) rpacket[PKT_ERROR];
+  }else{
+    std::cout << "ping result " << result << std::endl;
   }
-
   return result;
 }
 
