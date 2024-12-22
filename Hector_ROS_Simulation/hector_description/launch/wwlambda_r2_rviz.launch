@@ -15,7 +15,7 @@
     </node>
     </group>
 
-    <group if="true">
+    <group if="false">
     <rosparam file="$(find bear_actuator_ros)/config/lambda_leg_trajectory_controllers.yaml" command = "load"/>
     <node name="controller_spawner" pkg="controller_manager"
             type="spawner" respawn="false"
@@ -25,6 +25,14 @@
 
     <group if="false">
     <rosparam file="$(find bear_actuator_ros)/config/lambda_leg_position_controllers.yaml" command = "load"/>
+    <node name="controller_spawner" pkg="controller_manager"
+            type="spawner" respawn="false"
+            output="screen" ns="/"
+            args="lambda_leg/joint_state_controller lambda_leg/L_hip_controller lambda_leg/L_hip2_controller lambda_leg/L_thigh_controller lambda_leg/L_calf_controller lambda_leg/L_toe_controller lambda_leg/R_hip_controller lambda_leg/R_hip2_controller lambda_leg/R_thigh_controller lambda_leg/R_calf_controller lambda_leg/R_toe_controller"/>
+    </group>
+
+    <group if="true">
+    <rosparam file="$(find bear_actuator_ros)/config/lambda_leg_effort_controllers.yaml" command = "load"/>
     <node name="controller_spawner" pkg="controller_manager"
             type="spawner" respawn="false"
             output="screen" ns="/"

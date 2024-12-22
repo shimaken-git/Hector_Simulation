@@ -187,7 +187,7 @@ int PacketManager::ReadPacket(PortManager *port, uint8_t *packet) {
 //  for (int a = 0; a < rx_len; a++)
 //    std::cout << int(packet[a]) << " ";
 //  std::cout << std::endl;
-  std::cout << "timeout " << timeout << std::endl;
+  // std::cout << "timeout " << timeout << std::endl;
   return result;
 }
 

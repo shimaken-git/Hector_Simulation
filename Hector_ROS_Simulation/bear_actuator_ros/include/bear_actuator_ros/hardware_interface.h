@@ -75,6 +75,7 @@ class HardwareInterface : public hardware_interface::RobotHW
   void read();
   void write();
   void torque(bool);
+  void resetProtect(bool);
 
  private:
   void registerActuatorInterfaces();
@@ -125,6 +126,17 @@ class HardwareInterface : public hardware_interface::RobotHW
   std::vector<uint16_t> gimIdList;
   std::vector<uint8_t> write_add;
   std::vector<uint8_t> read_add;
+
+  std::map<std::string, double> limitPangleMap;    // use torque control joint protection  minus torque side
+  std::map<std::string, double> limitMangleMap;    // use torque control joint protection  plus torque side
+  std::map<std::string, double> kdMap;             // use torque control joint protection  zero velocity control parameter
+
+  std::vector<double> limitPangle;
+  std::vector<double> limitMangle;
+  std::vector<double> kd;
+  std::vector<bool> protect;
+  std::vector<double> counter_effort;
+
 
   Eigen::MatrixXd j2aMat;
 

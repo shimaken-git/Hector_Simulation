@@ -127,6 +127,25 @@ void HardwareInterface::makeActuatorList()
   std::cout << "gimIdIndex_.size()=" << gimIdIndex_.size() << std::endl;
   for(auto &a : gimIdIndex_) std::cout << "ID "<< a.first << " index " << a.second << std::endl;
   
+  //make torque mode joint protection data
+  for(auto i : robotJoint_){
+    std::cout << i.first << std::endl;
+    limitPangle.push_back(limitPangleMap[i.first]);
+    limitMangle.push_back(limitMangleMap[i.first]);
+    kd.push_back(kdMap[i.first]);
+    protect.push_back(false);
+    counter_effort.push_back(0.0);
+  }
+
+  // index = 0;
+  // for(auto i : robotJoint_){
+  //   std::cout << i.first << std::endl;
+  //   std::cout << "  limitPangle[" << index << "]=" << limitPangle[index] << std::endl;
+  //   std::cout << "  limitMangle[" << index << "]=" << limitMangle[index] << std::endl;
+  //   std::cout << "           kd[" << index << "]=" << kd[index] << std::endl;
+  //   index++;
+  // }
+
     //make convertA2Jset
   for(auto i : robotJoint_){
     std::cout << i.first << std::endl;
@@ -318,9 +337,8 @@ bool HardwareInterface::getActuatorInfo(const std::string yaml_file)
       }
       std::cout << name << std::endl;
       YAML::Node item = block2[name];
-      YAML::Node j = item["joint"];
-      // std::cout << j[0]["name"] << std::endl;
       std::vector<ItemValueD> jnt_vec;
+      YAML::Node j = item["joint"];
       for(const auto j_item : j){
         std::string joint = j_item["name"].as<std::string>();
         double value = j_item["coeff"].as<double>();
@@ -331,6 +349,9 @@ bool HardwareInterface::getActuatorInfo(const std::string yaml_file)
         jnt_vec.push_back(item);
       }
       robotJoint_[name] = jnt_vec;
+      limitPangleMap[name] = item["limit_p_angle"].as<double>();
+      limitMangleMap[name] = item["limit_m_angle"].as<double>();
+      kdMap[name] = item["protection_kd"].as<double>();
     }
   }
 
@@ -389,6 +410,10 @@ bool HardwareInterface::initActuators(void)
       std::cout << a.item_name << " " << a.value << std::endl;
       if(a.item_name == "limit_i_max"){
         if(!bear_handle.SetLimitIMax((uint8_t)act.second, a.value)){
+          ROS_ERROR("BEAR ACTUATOR ERROR %s %d %s %f", act.first.c_str(), act.second, a.item_name.c_str(), a.value);
+        }
+      }else if(a.item_name == "mode"){
+        if(!bear_handle.SetMode((uint8_t)act.second, (int32_t)a.value)){
           ROS_ERROR("BEAR ACTUATOR ERROR %s %d %s %f", act.first.c_str(), act.second, a.item_name.c_str(), a.value);
         }
       }
@@ -567,7 +592,7 @@ void HardwareInterface::read()
         int idx = idIndex_[idList[i]];
         get_position[idx] = ret_vec_r[i][1];
         get_velocity[idx] = ret_vec_r[i][2];
-        get_current[idx] = ret_vec_r[i][3] * torque_constant;
+        get_current[idx] = ret_vec_r[i][3] * torque_constant;   //bearのtorque_constantはgear_ratioを含む
         uint8_t err = ret_vec_r[i][4];  // error code
       }
     }else{
@@ -579,7 +604,7 @@ void HardwareInterface::read()
     int idx = gimIdIndex_[id];
     get_position[idx] = gim_handle.GetPosition(id, result);
     get_velocity[idx] = gim_handle.GetVelocity(id, result);
-    get_current[idx] = gim_handle.GetTorque(id, result);
+    get_current[idx] = gim_handle.GetTorque(id, result) * gim_handle.torque_constant * gim_handle.gear_ratio;
   }
   for(uint8_t idx = 0; idx < act_size; idx++){
     // Position
@@ -588,7 +613,29 @@ void HardwareInterface::read()
     joints_[idx].velocity = convertActuator2Joint(idx, get_velocity);
     // Effort
     joints_[idx].effort = convertActuator2Joint(idx, get_current);
-    ROS_INFO("[%d] pos %f vel %f cur %f", idx, joints_[idx].position, joints_[idx].velocity, joints_[idx].effort);
+    // ROS_INFO("[%d] pos %f vel %f cur %f", idx, joints_[idx].position, joints_[idx].velocity, joints_[idx].effort);
+  }
+  if(interface_ == "effort"){
+    for(uint8_t idx = 0; idx < act_size; idx++){
+      if(protect[idx]){
+        counter_effort[idx] = -kd[idx] * joints_[idx].velocity;
+        ROS_ERROR("joint[%d] EFFORT PROTECTION ALREADY ON", idx);
+      }
+      if(joints_[idx].effort_command != 0){
+        if(joints_[idx].position > limitPangle[idx]){
+          protect[idx] = true;
+          ROS_ERROR("joint[%d] EFFORT PROTECTION ON %f > %f", idx, joints_[idx].position ,limitPangle[idx]);
+        }else if(joints_[idx].position < limitMangle[idx]){
+          protect[idx] = true;
+          ROS_ERROR("joint[%d] EFFORT PROTECTION ON %f < %f", idx, joints_[idx].position ,limitMangle[idx]);
+        }else{
+          ROS_INFO("joint[%d] angle within range %f <= %f <= %f", idx, limitMangle[idx], joints_[idx].position ,limitPangle[idx]);
+        }
+        if(protect[idx]) counter_effort[idx] = -kd[idx] * joints_[idx].velocity;
+      }else{
+        ROS_INFO("joint[%d] effort zero", idx);
+      }
+    }
   }
   if(first){
     for(uint8_t idx = 0; idx < act_size; idx++){
@@ -606,7 +653,12 @@ void HardwareInterface::write()
   int row = robotJoint_.size();
 
   Eigen::MatrixXd joint_data(col, 1);
-  for(int i = 0; i < col; i++) joint_data(i, 0) = joints_[i].position_command;
+  if(interface_ == "position") for(int i = 0; i < col; i++) joint_data(i, 0) = joints_[i].position_command;
+  else if(interface_ == "velocity") for(int i = 0; i < col; i++) joint_data(i, 0) = joints_[i].velocity_command;
+  else if(interface_ == "effort") for(int i = 0; i < col; i++){
+    if(protect[i]) joint_data(i, 0) = counter_effort[i];
+    else joint_data(i, 0) = joints_[i].effort_command;
+  }
   Eigen::MatrixXd actuator_data(col, 1);
   actuator_data = j2aMat * joint_data;
   // std::cout << "actuator_data " << actuator_data << std::endl;
@@ -627,7 +679,8 @@ void HardwareInterface::write()
     for(auto id : idList){
       int idx = idIndex_[id];
       std::vector<float> _data;
-      _data.push_back(joints_[idx].effort_command);
+      _data.push_back(actuator_data(idx, 0) / torque_constant);
+      // std::cout << "idx:" << idx << " effort:" << actuator_data(idx, 0) << " " << _data.back() << std::endl;
       data.push_back(_data);
     }
     if(!bear_handle.BulkWrite(idList, write_add, data)){
@@ -645,9 +698,11 @@ void HardwareInterface::write()
     }
   }
   else if (strcmp(interface_.c_str(), "effort") == 0){
+    double tc = gim_handle.torque_constant * gim_handle.gear_ratio;
     for(auto id : gimIdList){
       int idx = gimIdIndex_[id];
-      if(gim_handle.SetPosition((uint16_t)id, joints_[idx].effort_command, 10, err) < 0){
+      // std::cout << "idx:" << idx << " effort:" << actuator_data(idx, 0) << " " << actuator_data(idx, 0) / tc << std::endl;
+      if(gim_handle.SetTorque((uint16_t)id, actuator_data(idx, 0) / tc, 10, err) < 0){
         ROS_ERROR("GIM ACTUATOR WRITE ERROR %d err:%d", id, err);
       }
     }
@@ -679,6 +734,14 @@ void HardwareInterface::torque(bool torque)
         ROS_ERROR("GIM ACTUATOR ERROR %d", id);
       }
     }
+  }
+}
+
+void HardwareInterface::resetProtect(bool reset)
+{
+  uint8_t err;
+  if(reset){
+    for(auto b : protect) b = false;
   }
 }
 

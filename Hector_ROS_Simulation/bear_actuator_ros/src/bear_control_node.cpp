@@ -19,6 +19,7 @@
 
 bool torque_cmd = false;
 bool torque = false;
+bool reset_cmd = false;
 
 void timerCallback(bear_actuator_ros::HardwareInterface &hardware_interface,
                    controller_manager::ControllerManager &cm,
@@ -35,6 +36,10 @@ void timerCallback(bear_actuator_ros::HardwareInterface &hardware_interface,
     hardware_interface.torque(torque);
     torque_cmd = false;
   }
+  if(reset_cmd){
+    hardware_interface.resetProtect(true);
+    reset_cmd = false;
+  }
 }
 
 void powerCb(const std_msgs::String::ConstPtr& msg)
@@ -46,6 +51,8 @@ void powerCb(const std_msgs::String::ConstPtr& msg)
   }else if(msg->data == "off"){
     torque_cmd = true;
     torque = false;
+  }else if(msg->data == "reset"){
+    reset_cmd = true;
   }
 }
 

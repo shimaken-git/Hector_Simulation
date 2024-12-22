@@ -6,6 +6,7 @@ from trajectory_msgs.msg import JointTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
 from sensor_msgs.msg import JointState
 from sensor_msgs.msg import Joy
+from std_msgs.msg import Float64
 from std_msgs.msg import String
 import numpy as np
 import time
@@ -15,7 +16,7 @@ from scipy.spatial.transform import Rotation
 
 args = sys.argv
 
-pub = rospy.Publisher('/lambda_leg/command', JointTrajectory, queue_size=1)
+pub = []
 
 command = ""
 positions = {}   #dict
@@ -64,7 +65,7 @@ def joint_publish(joint_l, joint_r, sec, nsec):
         print(i, p, tj.joint_names[i])
     pnt.time_from_start = rospy.Duration(sec, nsec)
     tj.points.append(pnt)
-    pub.publish(tj)
+    # pub.publish(tj)
 
 def leg_pub(tgt_left_z, tgt_right_z, sec, nsec):
     tgt_y = 0.0
@@ -153,12 +154,28 @@ def commandCb(data):
 
 def leg_control():
     global command, pub
-    rospy.init_node('lambda_leg_sample')
-    pub = rospy.Publisher('/lambda_leg/command', JointTrajectory, queue_size=1)
+    rospy.init_node('lambda_leg_sample2')
+    pub.append(rospy.Publisher('/lambda_leg/L_hip_controller/command', Float64, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/L_hip2_controller/command', Float64, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/L_thigh_controller/command', Float64, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/L_calf_controller/command', Float64, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/L_toe_controller/command', Float64, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/R_hip_controller/command', Float64, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/R_hip2_controller/command', Float64, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/R_thigh_controller/command', Float64, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/R_calf_controller/command', Float64, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/R_toe_controller/command', Float64, queue_size=1))
     rospy.Subscriber("joint_states", JointState, jointCb)
     rospy.Subscriber("leg_command", String, commandCb)
     rospy.Subscriber("joy", Joy, joyCb)
     
+    # use command'jacob'
+    # fb_coef = -30.0
+    fb_coef = 0.0
+    jacob_first = True
+    target_height_left = 0
+    target_height_right = 0
+
     r = rospy.Rate(10)  # 10Hz
     while not rospy.is_shutdown():
         if command == "zero" :
@@ -173,8 +190,9 @@ def leg_control():
             # pnt.effort = [0,0,0,0,0,0,0,0,0,0]
             pnt.time_from_start = rospy.Duration(1, 0)
             tj.points.append(pnt)
-            pub.publish(tj)
+            # pub.publish(tj)
             command = ""
+            jacob_first = True
 
         elif command == "stand" :   # set stand pose    > stand y z pitch yw  [-0.1 > z > -0.32]
             command = ""
@@ -191,6 +209,54 @@ def leg_control():
             leg_pub(-0.3, -0.2, 0, 50000000)
             time.sleep(0.2)
             leg_pub(-0.3, -0.3, 0, 50000000)
+
+        elif command == "jacob" :
+            diff_left = 0.0
+            diff_right = 0.0
+            # command = ""
+            fx = 0.0
+            fy = 0.0
+            fz = -30.0
+            my = 0.0
+            mz = 0.0
+
+            ljoint, lpoints, lrots, rjoint, rpoints, rrots = get_present_pos()
+            lpoints, lrots = dk(ljoint)
+            rpoints, rrots = dk(rjoint)
+            if jacob_first:
+                target_height_left = -lpoints[5][2, 0]
+                target_height_right = -rpoints[5][2, 0]
+                print("target hight left :", target_height_left)
+                print("target hight right :", target_height_right)
+                jacob_first = False
+            else:
+                diff_left = target_height_left + lpoints[5][2, 0]
+                diff_right = target_height_right + rpoints[5][2, 0]
+                print("diff", diff_left, diff_right)
+            fa = diff_left * fb_coef
+            print("fa:", fa, diff_left, fb_coef)
+            ui = np.matrix([[fx, fy, fz + fa, my, mz]]).transpose()
+            ja = jacobian(lpoints, lrots)
+            ltau = ja.transpose() * ui
+            fa = diff_right * fb_coef
+            print("fa:", fa, diff_right, fb_coef)
+            ui = np.matrix([[fx, fy, fz + fa, my, mz]]).transpose()
+            ja = jacobian(rpoints, rrots)
+            rtau = ja.transpose() * ui
+            print("ltau", ltau)
+            print("rtau", rtau)
+            i = 0
+            trq = Float64()
+            for t in ltau :
+                trq.data = t[0,0]
+                pub[i].publish(trq)
+                # print (trq.data)
+                i += 1
+            for t in rtau :
+                trq.data = t[0,0]
+                pub[i].publish(trq)
+                # print (trq.data)
+                i += 1
 
         elif command == "standrpy" :   # set stand pose with roll pitch and yaw    > standrpy y z roll pitch yaw [-0.1 > z > -0.32]
             # if len(inp_list) == 6 and float(inp_list[2]) < -0.1:
@@ -267,6 +333,35 @@ def leg_control():
             print(rot.as_matrix())
             print(rot.as_euler('xyz', degrees=True))
             print(rot.as_euler('xyz'))
+
+        elif command == "torque" :
+            thigh = Float64()
+            calf = Float64()
+            l_hip2 = Float64()
+            r_hip2 = Float64()
+
+            thigh.data = 0.3
+            calf.data = -0.5
+            l_hip2.data = 0.2
+            r_hip2.data = -0.2
+
+            pub[1].publish(l_hip2)
+            pub[2].publish(thigh)
+            pub[3].publish(calf)
+            pub[6].publish(r_hip2)
+            pub[7].publish(thigh)
+            pub[8].publish(calf)
+
+        elif command == "torque0" :
+            zero = Float64()
+            zero.data = 0.0
+
+            pub[1].publish(zero)
+            pub[2].publish(zero)
+            pub[3].publish(zero)
+            pub[6].publish(zero)
+            pub[7].publish(zero)
+            pub[8].publish(zero)
         
         inp_list = ["none", 0, 0, 0, 0]
         if inp_list[0] == "bending" :    # move stand pose    > bending y z time [-0.1 > z > -0.32]

@@ -47,8 +47,6 @@ class GIM{
         float GetTorque(uint16_t id, int32_t &result);
 
     private:
-        float torque_constant;
-        float gear_ratio;
         int32_t s;
         struct ifreq ifr;
         struct sockaddr_can addr;
@@ -61,6 +59,8 @@ class GIM{
         std::map<uint16_t, float> zeropos;
 
     public:
+        float torque_constant;
+        float gear_ratio;
         std::map<uint8_t, float> present_position;
         std::map<uint8_t, float> present_velocity;
         std::map<uint8_t, float> present_torque;
