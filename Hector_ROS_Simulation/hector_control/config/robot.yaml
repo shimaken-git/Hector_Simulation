@@ -1,0 +1,26 @@
+lambda:
+  body_height: 0.335
+  mu: 0.25
+  f_max: 100    #[N]
+  weight: 4.0   #[kg]
+  leg_yaw_offset_x: 0.0
+  leg_yaw_offset_y: 0.053
+  leg_yaw_offset_z: -0.085
+  leg_roll_offset_x: 0.0
+  leg_roll_offset_y: 0.007
+  leg_roll_offset_z: 0.0
+  hip_link_length: 0.0
+  thigh_link_length: 0.153
+  calf_link_length: 0.153
+  foot_height: 0.15   #[m]
+  i_body:
+    - 50320829.484e-9
+    - -788.372e-9
+    - -5101.664e-9
+    - -788.372e-9
+    - 44848336.284e-9
+    - -156655.156e-9
+    - -5101.664e-9
+    - -156655.156e-9
+    - 17863828.962e-9
+    

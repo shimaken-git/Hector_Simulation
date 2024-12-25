@@ -152,9 +152,13 @@ void computeLegJacobianAndPosition(Biped& _biped, Vec5<double>& q, Mat65<double>
 #endif
 #endif
 
-    q(2) = q(2) + 0.3*3.14159;   //ここでいじったqはあとでも使うらしい。なんか変な実装。。。
-    q(3) = q(3) - 0.6*3.14159;
-    q(4) = q(4) + 0.3*3.14159;
+    //Joint angles offset correction
+    // q(2) = q(2) + 0.3*3.14159;   //ここでいじったqはあとでも使うらしい。なんか変な実装。。。
+    // q(3) = q(3) - 0.6*3.14159;
+    // q(4) = q(4) + 0.3*3.14159;
+    // q(2) = q(2) + 0.05*3.14159;
+    // q(3) = q(3) - 0.1*3.14159;
+    // q(4) = q(4) + 0.05*3.14159;
 
     double q0 = q(0);
     double q1 = q(1);

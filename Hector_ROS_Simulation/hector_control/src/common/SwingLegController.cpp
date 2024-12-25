@@ -264,10 +264,13 @@ void swingLegController::computeIK(const Vec3<double> &bodyPositionDesired, Eige
         jointAngles[4] = -data->_legController->data[leg].q(3)-data->_legController->data[leg].q(2) - ori::rotationMatrixToRPY(seResult.rBody)[1]; // q3 - q2
 #endif
 #endif
-        //Joint angle offsets
-        jointAngles[2] -= 0.3*M_PI;
-        jointAngles[3] += 0.6*M_PI;
-        jointAngles[4] -= 0.3*M_PI;
+        //Joint angles offset correction
+        // jointAngles[2] -= 0.3*M_PI;
+        // jointAngles[3] += 0.6*M_PI;
+        // jointAngles[4] -= 0.3*M_PI;
+        jointAngles[2] -= 0.05*M_PI;
+        jointAngles[3] += 0.1*M_PI;
+        jointAngles[4] -= 0.05*M_PI;
         // std::cout << "ik " << jointAngles << std::endl;
 }
 

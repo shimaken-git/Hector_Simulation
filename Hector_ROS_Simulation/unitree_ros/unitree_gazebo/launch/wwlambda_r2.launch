@@ -33,13 +33,27 @@
           args="-urdf 
           -z 0.335
           -x 0.0
-          -J L_thigh_joint 0
+          -J L_thigh_joint 0.785398163
+          -J L_calf_joint -1.570796327
+          -J L_toe_joint 0.785398163
+          -J R_thigh_joint 0.785398163
+          -J R_calf_joint -1.570796327
+          -J R_toe_joint 0.785398163
+          -model hector_gazebo -param robot_description "/>
+
+          <!-- -J L_thigh_joint 0
           -J L_calf_joint 0
           -J L_toe_joint 0
           -J R_thigh_joint 0
           -J R_calf_joint 0
-          -J R_toe_joint 0
-          -model hector_gazebo -param robot_description "/>
+          -J R_toe_joint 0 -->
+          <!-- -J L_thigh_joint 0.942477796
+          -J L_calf_joint -1.884955592
+          -J L_toe_joint 0.942477796
+          -J R_thigh_joint 0.942477796
+          -J R_calf_joint -1.884955592
+          -J R_toe_joint 0.942477796 -->
+
 
     <!-- Load joint controller configurations from YAML file to parameter server -->
     <rosparam file="$(arg dollar)$(arg robot_path)/config/robot_control.yaml" command="load"/>
