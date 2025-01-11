@@ -2,11 +2,10 @@
 <launch>
   <arg name="usb_port" default="/dev/ttyUSB0" />
   <arg name="baud_rate" default="8000000" />
-  <arg name="yaml_file" default="$(find bear_actuator_ros)/config/hardware.yaml"/>
-  <!-- <arg name="interface" default="position"/> -->
-  <arg name="interface" default="position"/>
+  <arg name="yaml_file" default="$(find bear_actuator_dfm_ros)/config/hardware.yaml"/>
+  <arg name="interface" default="dfm"/>
 
-  <node pkg="bear_actuator_ros" type="bear_control_node" name="bear_control_node" output="screen">
+  <node pkg="bear_actuator_dfm_ros" type="bear_control_node" name="bear_control_node" output="screen">
     <param name="usb_port" value="$(arg usb_port)"/>
     <param name="baud_rate" value="$(arg baud_rate)"/>
     <param name="yaml_file" value="$(arg yaml_file)"/>

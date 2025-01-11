@@ -1,0 +1,49 @@
+<launch>
+
+    <arg name="user_debug" default="false"/>
+    
+    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find hector_description)/xacro/wwlambda_r2.xacro'
+            DEBUG:=$(arg user_debug)"/>
+
+    <!-- for higher robot_state_publisher average rate-->
+    <!-- <param name="rate" value="1000"/> -->
+
+    <!-- send fake joint values -->
+    <group if="false">
+    <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher">
+        <param name="use_gui" value="true"/>
+    </node>
+    </group>
+
+    <group if="false">
+    <rosparam file="$(find bear_actuator_ros)/config/lambda_leg_trajectory_controllers.yaml" command = "load"/>
+    <node name="controller_spawner" pkg="controller_manager"
+            type="spawner" respawn="false"
+            output="screen" ns="/"
+            args="joint_state_controller lambda_leg"/>
+    </group>
+
+    <group if="false">
+    <rosparam file="$(find bear_actuator_ros)/config/lambda_leg_position_controllers.yaml" command = "load"/>
+    <node name="controller_spawner" pkg="controller_manager"
+            type="spawner" respawn="false"
+            output="screen" ns="/"
+            args="lambda_leg/joint_state_controller lambda_leg/L_hip_controller lambda_leg/L_hip2_controller lambda_leg/L_thigh_controller lambda_leg/L_calf_controller lambda_leg/L_toe_controller lambda_leg/R_hip_controller lambda_leg/R_hip2_controller lambda_leg/R_thigh_controller lambda_leg/R_calf_controller lambda_leg/R_toe_controller"/>
+    </group>
+
+    <group if="true">
+    <rosparam file="$(find bear_actuator_dfm_ros)/config/lambda_leg_bear_effort_controllers.yaml" command = "load"/>
+    <node name="controller_spawner" pkg="controller_manager"
+            type="spawner" respawn="false"
+            output="screen" ns="/"
+            args="lambda_leg/joint_state_controller lambda_leg/L_hip_controller lambda_leg/L_hip2_controller lambda_leg/L_thigh_controller lambda_leg/L_calf_controller lambda_leg/L_toe_controller lambda_leg/R_hip_controller lambda_leg/R_hip2_controller lambda_leg/R_thigh_controller lambda_leg/R_calf_controller lambda_leg/R_toe_controller"/>
+    </group>
+
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+        <param name="publish_frequency" type="double" value="1000.0"/>
+    </node>
+
+    <node pkg="rviz" type="rviz" name="rviz" respawn="false" output="screen"
+        args="-d $(find hector_description)/launch/check_joint.rviz"/>
+
+</launch>

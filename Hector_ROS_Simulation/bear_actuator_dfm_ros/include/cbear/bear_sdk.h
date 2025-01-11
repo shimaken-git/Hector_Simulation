@@ -13,10 +13,12 @@
 namespace bear {
 class BEAR {
  public:
+  // BEAR();
   BEAR(const char *portName, int baudrate);
+  ~BEAR();
 
-  void connect();
-
+  bool connect(char *);
+  void disconnect();
   /*! Observe the error code present in the chain.
    *
    * @return
@@ -175,6 +177,8 @@ class BEAR {
                                                 std::vector<uint8_t> read_add,
                                                 std::vector<uint8_t> write_add,
                                                 std::vector<std::vector<float>> data);
+
+  void ClearPort();
 
   /* ****************** *
    * Utility functions. *

@@ -59,22 +59,41 @@
 
 using namespace bear;
 
+// BEAR::BEAR(){}
+
 BEAR::BEAR(const char *portName, int baudrate)
     : portName_{portName},
       baudrate_{baudrate},
       packetManager_{bear::PacketManager()},
       portManager_{bear::PortManager(portName_, baudrate)} {
-  connect();
+  // connect();
 }
 
-void BEAR::connect() {
+BEAR::~BEAR()
+{
+  disconnect();
+}
+
+bool BEAR::connect(char *log) {
   if (portManager_.OpenPort()) {
-    printf("Success! Port opened!\n");
-    printf(" - Device Name: %s\n", portName_);
-    printf(" - Baudrate: %d\n\n", portManager_.GetBaudRate());
+    sprintf(log, "Success! Port opened!\n - Device Name: %s\n - Baudrate: %d\n\n", portName_, portManager_.GetBaudRate());
+    ///  効果ないけど一応残しておく
+    uint8_t packet[500];
+    int len = 500;
+    while(portManager_.ReadPort(packet, len) > 0){
+      printf("len=%d", len);
+    }
+    ///
+    return true;
   } else {
-    printf("Failed to open port! [%s]\n", portName_);
+    sprintf(log, "Failed to open port! [%s]\n", portName_);
   }
+  return false;
+}
+
+void BEAR::disconnect()
+{
+  portManager_.ClosePort();
 }
 
 uint8_t BEAR::GetErrorCode() {
@@ -575,7 +594,8 @@ std::vector<std::vector<float>> BEAR::BulkRead(std::vector<uint8_t> mIDs, std::v
   std::vector<std::vector<float>> ret_vec;
   std::vector<uint8_t> empty_vec;
   std::vector<std::vector<uint32_t>> empty_vec_uint32;
-  packetManager_.BulkCommunication(&portManager_, mIDs, read_add, empty_vec, empty_vec_uint32, ret_vec, &bear_error);
+  int result = packetManager_.BulkCommunication(&portManager_, mIDs, read_add, empty_vec, empty_vec_uint32, ret_vec, &bear_error);
+  // if(result != COMM_SUCCESS) ret_vec.clear();
   return ret_vec;
 }
 
@@ -620,15 +640,22 @@ std::vector<std::vector<float>> BEAR::BulkReadWrite(std::vector<uint8_t> mIDs,
     data_uint32_i.erase(data_uint32_i.begin(), data_uint32_i.end());
   }
 
-  packetManager_.BulkCommunication(&portManager_,
+  uint8_t err;
+  bear_error = packetManager_.BulkCommunication(&portManager_,
                                    mIDs,
                                    read_add,
                                    write_add,
                                    data_uint32,
                                    ret_vec,
-                                   &bear_error);
+                                   &err);
   return ret_vec;
 }
+
+void BEAR::ClearPort()
+{
+  portManager_.ClearPort();
+}
+
 
 /* ****************** *
  * Utility functions. *

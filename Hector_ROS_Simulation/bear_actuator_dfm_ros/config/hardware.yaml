@@ -1,0 +1,139 @@
+row_joint:
+  joint1:
+    ID: 1
+    type: bear
+    limit_i_max: 5.0
+    mode: 3   # 0:torque 1:speed 2:position 3:direct force mode
+  joint2:
+    ID: 3
+    type: bear
+    limit_i_max: 5.0
+    mode: 3
+  joint3:
+    ID: 2
+    type: bear
+    limit_i_max: 5.0
+    mode: 3
+  joint4:
+    ID: 6
+    type: bear
+    limit_i_max: 5.0
+    mode: 3
+  joint5:
+    ID: 2
+    type: gim
+    cal_rpm: -7
+    limit: -1.30
+  joint6:
+    ID: 11
+    type: bear
+    limit_i_max: 5.0
+    mode: 3
+  joint7:
+    ID: 8
+    type: bear
+    limit_i_max: 5.0
+    mode: 3
+  joint8:
+    ID: 7
+    type: bear
+    limit_i_max: 5.0
+    mode: 3
+  joint9:
+    ID: 9
+    type: bear
+    limit_i_max: 5.0
+    mode: 3
+  joint10:
+    ID: 1
+    type: gim
+    cal_rpm: 7
+    limit: 1.39
+
+robot_joint:
+  L_hip_joint:
+    joint:
+      - name: joint1
+        coeff: -1.0
+    limit_p_angle: 0.2  #トルク制御時の保護境界　limit_p_angleはプラストルクに対する境界
+    limit_m_angle: -0.2  #トルク制御時の保護境界　limit_m_angleはマイナストルクに対する境界
+    protection_kd: 0.0  #保護動作時の速度ゼロ制御フィードバック係数
+  L_hip2_joint:
+    joint:
+      - name: joint2
+        coeff: -0.5
+      - name: joint3
+        coeff: 0.5
+    limit_p_angle: 0.5
+    limit_m_angle: -0.2
+    protection_kd: 0.0
+  L_thigh_joint:
+    joint:
+      - name: joint2
+        coeff: 0.5
+      - name: joint3
+        coeff: 0.5
+    limit_p_angle: 0.0
+    limit_m_angle: -1.5
+    protection_kd: 0.0
+  L_calf_joint:
+    joint:
+      - name: joint2
+        coeff: -0.5
+      - name: joint3
+        coeff: -0.5
+      - name: joint4
+        coeff: 1.0
+    limit_p_angle: 1.7
+    limit_m_angle: 0.0
+    protection_kd: 0.0
+  L_toe_joint:
+    joint:
+      - name: joint5
+        coeff: 1.0
+    limit_p_angle: 1.0
+    limit_m_angle: -1.0
+    protection_kd: 0.0
+  R_hip_joint:
+    joint:
+      - name: joint6
+        coeff: -1.0
+    limit_p_angle: 0.2
+    limit_m_angle: -0.2
+    protection_kd: 0.0
+  R_hip2_joint:
+    joint:
+      - name: joint7
+        coeff: -0.5
+      - name: joint8
+        coeff: 0.5
+    limit_p_angle: 0.2
+    limit_m_angle: -0.5
+    protection_kd: 0.0
+  R_thigh_joint:
+    joint:
+      - name: joint7
+        coeff: -0.5
+      - name: joint8
+        coeff: -0.5
+    limit_p_angle: 0.0
+    limit_m_angle: -1.5
+    protection_kd: 0.0
+  R_calf_joint:
+    joint:
+      - name: joint7
+        coeff: 0.5
+      - name: joint8
+        coeff: 0.5
+      - name: joint9
+        coeff: -1.0
+    limit_p_angle: 1.7
+    limit_m_angle: 0.0
+    protection_kd: 0.0
+  R_toe_joint:
+    joint:
+      - name: joint10
+        coeff: -1.0
+    limit_p_angle: 1.0
+    limit_m_angle: -1.0
+    protection_kd: 0.0

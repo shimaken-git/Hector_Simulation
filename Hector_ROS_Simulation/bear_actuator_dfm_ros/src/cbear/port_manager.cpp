@@ -91,9 +91,12 @@ bool PortManager::SetupPort(const int cflag_baud) {
   }
   bzero(&tioNew, sizeof(tioNew)); // Clear the struct for new port settings
 
+  std::cout << "cflag_baud " << cflag_baud << std::endl; 
+
   tioNew.c_cflag = cflag_baud | CS8 | CLOCAL | CREAD;
   tioNew.c_iflag = IGNPAR;
   tioNew.c_oflag = 0;
+  // tioNew.c_lflag &= ~(ECHO | ICANON);
   tioNew.c_lflag = 0;
   tioNew.c_cc[VTIME] = 0;
   tioNew.c_cc[VMIN] = 0;

@@ -1,0 +1,27 @@
+row_joint:
+  joint1:
+    ID: 5
+    type: bear
+    limit_i_max: 5.0
+    mode: 3   # 0:torque 1:speed 2:position 3:direct force mode
+  joint2:
+    ID: 10
+    type: bear
+    limit_i_max: 5.0
+    mode: 3   # 0:torque 1:speed 2:position 3:direct force mode
+
+robot_joint:
+  L_test_joint:
+    joint:
+      - name: joint1
+        coeff: 1.0
+    limit_p_angle: 2.0  #トルク制御時の保護境界　limit_p_angleはプラストルクに対する境界
+    limit_m_angle: -2.0  #トルク制御時の保護境界　limit_m_angleはマイナストルクに対する境界
+    protection_kd: 0.0  #保護動作時の速度ゼロ制御フィードバック係数
+  R_test_joint:
+    joint:
+      - name: joint2
+        coeff: 1.0
+    limit_p_angle: 2.0  #トルク制御時の保護境界　limit_p_angleはプラストルクに対する境界
+    limit_m_angle: -2.0  #トルク制御時の保護境界　limit_m_angleはマイナストルクに対する境界
+    protection_kd: 0.0  #保護動作時の速度ゼロ制御フィードバック係数

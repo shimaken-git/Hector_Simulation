@@ -33,16 +33,17 @@
           args="-urdf 
           -z 0.335
           -x 0.0
-          -J L_thigh_joint 0
-          -J L_calf_joint 0
-          -J L_toe_joint 0
-          -J R_thigh_joint 0
-          -J R_calf_joint 0
-          -J R_toe_joint 0
+          -J L_thigh_joint 0.785398163
+          -J L_calf_joint -1.570796327
+          -J L_toe_joint 0.785398163
+          -J R_thigh_joint 0.785398163
+          -J R_calf_joint -1.570796327
+          -J R_toe_joint 0.785398163
           -model hector_gazebo -param robot_description "/>
 
     <!-- Load joint controller configurations from YAML file to parameter server -->
-    <rosparam file="$(arg dollar)$(arg robot_path)/config/robot_control.yaml" command="load"/>
+    <!-- <rosparam file="$(arg dollar)$(arg robot_path)/config/robot_control.yaml" command="load"/> -->
+    <rosparam file="$(find bear_actuator_dfm_ros)/config/lambda_leg_dfm_controller_test.yaml" command = "load"/>
 
     <!-- load the controllers -->
     <node pkg="controller_manager" type="spawner" name="controller_spawner" respawn="false"

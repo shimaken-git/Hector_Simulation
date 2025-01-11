@@ -15,6 +15,7 @@
 #define COMM_TX_FAIL -1001
 #define COMM_RX_FAIL -1002
 #define COMM_RX_CORRUPT -1003
+#define COMM_RX_TIMEOUT -1004
 
 #define MAX_COMM_ATTEMPT 5
 
@@ -26,6 +27,8 @@
 #define INST_SAVE_CONFIG 0x06
 #define INST_BULK_COMM 0x12
 #define COMM_TX_ERROR -2000
+
+// #define WARN_DISP
 
 namespace bear {
 class PacketManager {

@@ -42,20 +42,20 @@
           -model hector_gazebo -param robot_description "/> -->
 
     <!-- Load joint controller configurations from YAML file to parameter server -->
-    <!-- <rosparam file="$(arg dollar)$(arg robot_path)/config/robot_control.yaml" command="load"/> -->
+    <rosparam file="$(arg dollar)$(arg robot_path)/config/robot_control.yaml" command="load"/>
 
     <!-- load the controllers -->
-    <!-- <node pkg="controller_manager" type="spawner" name="controller_spawner" respawn="false"
+    <node pkg="controller_manager" type="spawner" name="controller_spawner" respawn="false"
           output="screen" ns="/hector_gazebo" args="joint_state_controller
           L_hip_controller L_hip2_controller L_thigh_controller L_calf_controller L_toe_controller
           R_hip_controller R_hip2_controller R_thigh_controller R_calf_controller R_toe_controller
-         "/> -->
+         "/>
 
     <!-- convert joint states to TF transforms for rviz, etc -->
-    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"
+    <!-- <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"
           respawn="false" output="screen">
         <remap from="/joint_states" to="/hector_gazebo/joint_states"/>
-    </node>
+    </node> -->
 
 
     <!-- <node pkg="unitree_gazebo" type="servo" name="servo" required="true" output="screen"/> -->

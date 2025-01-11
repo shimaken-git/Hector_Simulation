@@ -1,0 +1,16 @@
+lambda_leg:
+    # Publish all joint states -----------------------------------
+    joint_state_controller:
+        type: joint_state_controller/JointStateController
+        publish_rate: 1000  
+
+    # L Controllers ---------------------------------------
+    L_test_controller:
+        type: bear_effort_controllers/JointPositionController
+        joint: L_test_joint
+        pid: {p: 100.0, i: 0.0, d: 5.0, i_clamp_min: -1.0, i_clamp_max: 1.0}
+    
+    R_test_controller:
+        type: bear_effort_controllers/JointPositionController
+        joint: R_test_joint
+        pid: {p: 100.0, i: 0.0, d: 5.0, i_clamp_min: -1.0, i_clamp_max: 1.0}  

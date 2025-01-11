@@ -117,13 +117,13 @@ int PacketManager::WritePacket(PortManager *port, uint8_t *packet) {
 }
 
 int PacketManager::ReadPacket(PortManager *port, uint8_t *packet) {
-  int result{COMM_TX_FAIL};
+  int result{COMM_RX_FAIL};
 
   uint8_t checksum = 0;
   uint8_t rx_len = 0;
   uint8_t wait_len = 6; // [HEADER0, HEADER1, ID, LENGTH, ERROR, CHKSUM]
-
-  while (true) {
+  uint32_t timeout = 100000;
+  while (timeout-- > 0) {
     rx_len += port->ReadPort(&packet[rx_len], wait_len - rx_len);
 
     if (rx_len >= wait_len) {
@@ -180,12 +180,13 @@ int PacketManager::ReadPacket(PortManager *port, uint8_t *packet) {
     }
   }
   port->in_use_ = false;
+  if(timeout <= 0) result = COMM_RX_TIMEOUT;
 
 //  std::cout << "Packet to be read: " << std::endl;
 //  for (int a = 0; a < rx_len; a++)
 //    std::cout << int(packet[a]) << " ";
 //  std::cout << std::endl;
-
+  // std::cout << "timeout " << timeout << std::endl;
   return result;
 }
 
@@ -256,8 +257,10 @@ int PacketManager::wrPacket(PortManager *port, uint8_t *wpacket, uint8_t *rpacke
   // Write packet
 //  BuildPacket(wpacket); // TODO: Make this modular
   result = WritePacket(port, wpacket);
-  if (result != COMM_SUCCESS)
+  if (result != COMM_SUCCESS){
+    std::cout << "wrPacket write error " << result << std::endl;
     return result;
+  }
 
   // TODO: Include timeout?
 
@@ -269,13 +272,15 @@ int PacketManager::wrPacket(PortManager *port, uint8_t *wpacket, uint8_t *rpacke
   if (result == COMM_SUCCESS && wpacket[PKT_ID] == rpacket[PKT_ID]) {
     if (error != 0)
       *error = (uint8_t) rpacket[PKT_ERROR];
+  }else{
+    std::cout << "ping result " << result << std::endl;
   }
-
   return result;
 }
 
 int PacketManager::wrBulkPacket(PortManager *port, uint8_t *wpacket, uint8_t *rpacket, uint8_t *error) {
   int result{COMM_TX_FAIL};
+  int timeout = 1000;
 
   // Write bulk packet
 //  BuildPacket(wpacket); // TODO: Make this modular
@@ -286,7 +291,7 @@ int PacketManager::wrBulkPacket(PortManager *port, uint8_t *wpacket, uint8_t *rp
   // TODO: Include timeout?
   do {
     result = ReadPacket(port, rpacket);
-  } while (result == COMM_SUCCESS && wpacket[PKT_ID] != rpacket[PKT_ID]);
+  } while (result == COMM_SUCCESS && wpacket[PKT_ID] != rpacket[PKT_ID] && timeout-- > 0);
 
   if (result == COMM_SUCCESS && wpacket[PKT_ID] == rpacket[PKT_ID]) {
     if (error != 0)
@@ -686,9 +691,14 @@ int PacketManager::BulkCommunication(PortManager *port,
       ret_single.push_back(pkt_rx[m_offset + PKT_ID]);
       uint8_t err_single = pkt_rx[m_offset + PKT_ERROR];
       if (err_single != 128) { // if not normal, cut the list short
-        ret_single.push_back(err_single);
-        std::cout << "Error in the return packet: " << int(err_single) << std::endl;
-        continue;
+        if(err_single & 0x03){
+#ifdef WARN_DISP
+          std::cout << "packet read WARNING id:" << ret_single.back() << " " << int(err_single) << std::endl; 
+#endif
+        }else{
+          ret_single.push_back(err_single);     //errorでも受信できているので継続とする。
+          continue;    
+        }
       }
 
       for (uint8_t jj = 0; jj < num_read_regs; jj++) {

@@ -16,20 +16,27 @@
 
 /* Authors: Ryan Shim */
 
-#include "bear_actuator_ros/hardware_interface.h"
-#include "cbear/bear_sdk.h"
-#include "cbear/bear_macro.h"
-#include "gim/gim.hpp"
+#include <bear_actuator_dfm_ros/hardware_interface.h>
+#include <cbear/bear_sdk.h>
+#include <cbear/bear_macro.h>
+#include <gim/gim.h>
 #include <unistd.h>
 #include <math.h>
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/LU>
 
-namespace bear_actuator_ros
+#define DFM_POS 0
+#define DFM_VEL 1
+#define DFM_EFT 2
+#define DFM_KP  3
+#define DFM_KD  4
+
+
+namespace bear_actuator_dfm_ros
 {
 HardwareInterface::HardwareInterface(ros::NodeHandle nh, ros::NodeHandle private_nh)
-: node_handle_(nh), priv_node_handle_(private_nh), bear_handle("", 8000000), torque_constant(0.35)
+: node_handle_(nh), priv_node_handle_(private_nh), bear_handle("", 8000000), torque_constant(0.35), kpChange(false)
 {
   /************************************************************
   ** Initialize ROS parameters
@@ -37,7 +44,7 @@ HardwareInterface::HardwareInterface(ros::NodeHandle nh, ros::NodeHandle private
   port_name_ = priv_node_handle_.param<std::string>("usb_port", "/dev/ttyUSB0");
   baud_rate_ = priv_node_handle_.param<int32_t>("baud_rate", 8000000);
   yaml_file_ = priv_node_handle_.param<std::string>("yaml_file", "");
-  interface_ = priv_node_handle_.param<std::string>("interface", "position");
+  interface_ = priv_node_handle_.param<std::string>("interface", "dfm");
 
   /************************************************************
   ** Register Interfaces
@@ -164,26 +171,38 @@ void HardwareInterface::makeActuatorList()
     }
     convertA2Jset.push_back(s);
   }
+  //disp convertA2Jset and make a2jMap
   std::cout << "convertA2Jset" << std::endl;
   int idx = 0;
   for(auto i : convertA2Jset){
-    std::cout << idx++ << std::endl;
+    std::cout << "joint " << idx << std::endl;
     for(auto ite = i.begin(); ite != i.end(); ite++){
-      std::cout << "  " << ite->first << " " << ite->second << std::endl;
+      std::cout << "  actuator " << ite->first << " " << ite->second << std::endl;
+      a2jMap[ite->first] = idx;
     }
+    idx++;
   }
-  if(interface_ == "position"){
+  //disp a2jMap
+  std::cout << "a2jMap" << std::endl;
+  for(auto a = a2jMap.begin(); a != a2jMap.end(); a++){
+    std::cout << "actuator:" << a->first << " joint:" << a->second << " ||| actuator:" << a->first << " ref from joint:" << a2jMap[a->first] << std::endl;
+  }
+  if(interface_ == "dfm"){
+    write_add = std::vector<uint8_t>{bear_macro::GOAL_POSITION, bear_macro::GOAL_VELOCITY, bear_macro::GOAL_IQ};
+    // write_add = std::vector<uint8_t>{bear_macro::GOAL_POSITION, bear_macro::GOAL_IQ};
+  }else if(interface_ == "position"){
     write_add = std::vector<uint8_t>{bear_macro::GOAL_POSITION};
   }else if(interface_ == "velocity"){
     write_add = std::vector<uint8_t>{bear_macro::GOAL_VELOCITY};
   }else if(interface_ == "effort"){
     write_add = std::vector<uint8_t>{bear_macro::GOAL_IQ};
   }
+  // read_add = std::vector<uint8_t>{bear_macro::PRESENT_POSITION, bear_macro::PRESENT_VELOCITY, bear_macro::PRESENT_IQ, bear_macro::P_GAIN_FORCE, bear_macro::D_GAIN_FORCE};
   read_add = std::vector<uint8_t>{bear_macro::PRESENT_POSITION, bear_macro::PRESENT_VELOCITY, bear_macro::PRESENT_IQ};
 }
 
 void HardwareInterface::registerActuatorInterfaces()
-{  
+{
   // dxl_wb_ = new DynamixelWorkbench;
   bool result = false;
 
@@ -196,7 +215,7 @@ void HardwareInterface::registerActuatorInterfaces()
   result = gimConnect();
   if (result == false){
     ROS_ERROR("Please check CAN interface");
-    return;
+    // return;
   }
 
   result = getActuatorInfo(yaml_file_);
@@ -256,7 +275,7 @@ bool HardwareInterface::gimConnect()
 
 bool HardwareInterface::getActuatorInfo(const std::string yaml_file)
 {
-  std::cout << "getActuatorInfo" << std::endl;
+  std::cout << "getActuatorInfo" << " yaml file:" << yaml_file << std::endl;
 
   YAML::Node actuator_yaml;
   actuator_yaml = YAML::LoadFile(yaml_file.c_str());
@@ -304,6 +323,8 @@ bool HardwareInterface::getActuatorInfo(const std::string yaml_file)
           }
         }
         bearActuator_info_[name] = info_vec;
+        currentKp.push_back(0.0);
+        currentKd.push_back(0.0);
       }else if(type_name == "gim"){
         std::vector<ItemValueD> info_vec;
         for (YAML::const_iterator it_item = item.begin(); it_item != item.end(); it_item++)
@@ -462,7 +483,9 @@ void HardwareInterface::registerControlInterfaces()
   for (auto iter = robotJoint_.begin(); iter != robotJoint_.end(); iter++)
   {
     // initialize joint vector
-    Joint joint;
+    bearJoint joint;
+    joint.position = 0.0; joint.velocity = 0.0; joint.effort = 0.0; joint.current = 0.0;
+    for(int i = 0; i < 6; i++) joint.dfm[i] = 0.0;
     // int idx = idIndex_[iter->second];
     joints_[idx] = joint;
     ROS_INFO("joint_name : %s", iter->first.c_str());
@@ -474,23 +497,36 @@ void HardwareInterface::registerControlInterfaces()
     joint_state_interface_.registerHandle(joint_state_handle);
 
     // connect and register the joint position, velocity and effort interface
-    hardware_interface::JointHandle position_joint_handle(joint_state_handle, &joints_[idx].position_command);
-    position_joint_interface_.registerHandle(position_joint_handle);
-    hardware_interface::JointHandle velocity_joint_handle(joint_state_handle, &joints_[idx].velocity_command);
-    velocity_joint_interface_.registerHandle(velocity_joint_handle);
-    hardware_interface::JointHandle effort_joint_handle(joint_state_handle, &joints_[idx].effort_command);
-    effort_joint_interface_.registerHandle(effort_joint_handle);
+    if(interface_ == "position"){
+      hardware_interface::JointHandle position_joint_handle(joint_state_handle, &joints_[idx].dfm[0]);
+      position_joint_interface_.registerHandle(position_joint_handle);
+    }else if(interface_ == "velocity"){
+      hardware_interface::JointHandle velocity_joint_handle(joint_state_handle, &joints_[idx].dfm[1]);
+      velocity_joint_interface_.registerHandle(velocity_joint_handle);
+    }else if(interface_ == "effort"){
+      hardware_interface::JointHandle effort_joint_handle(joint_state_handle, &joints_[idx].dfm[2]);
+      effort_joint_interface_.registerHandle(effort_joint_handle);
+    }else if(interface_ == "dfm"){
+      hardware_interface::JointHandle effort_joint_handle(joint_state_handle, joints_[idx].dfm);
+      effort_joint_interface_.registerHandle(effort_joint_handle);
+    }
     idx++;
   }
 
   registerInterface(&joint_state_interface_);
-  registerInterface(&position_joint_interface_);
-  registerInterface(&velocity_joint_interface_);
-  registerInterface(&effort_joint_interface_);
+    if(interface_ == "position"){
+      registerInterface(&position_joint_interface_);
+    }else if(interface_ == "velocity"){
+      registerInterface(&velocity_joint_interface_);
+    }else if(interface_ == "effort"){
+      registerInterface(&effort_joint_interface_);
+    }else if(interface_ == "dfm"){
+      registerInterface(&effort_joint_interface_);
+    }
 
   std::vector<std::string> name_list = getNames();
   for(int j=0; j < name_list.size(); j++){
-    ROS_INFO("%s", name_list[j].c_str());
+    ROS_INFO("<<%s>>", name_list[j].c_str());
     std::vector<std::string> resource_list = getInterfaceResources(name_list[j]);
     ROS_INFO("resource_list size %ld", resource_list.size());
     for(int i= 0; i < resource_list.size(); i++){
@@ -576,27 +612,60 @@ void HardwareInterface::read()
   //   id_array[id_cnt++] = (uint8_t)act.second;
   // }
 
-
   std::vector<std::vector<float> > ret_vec_r;
   ret_vec_r = bear_handle.BulkRead(idList, read_add);
   result = true;
-  if(ret_vec_r.size() == 0) result = false;
+  if(ret_vec_r.size() == 0){
+    ROS_ERROR("read error  result empty");
+    result = false;
+  }
   uint8_t err = bear_handle.GetErrorCode();
   if (result == false){
     ROS_ERROR("read error  bear_error=%d", err);
   }else{
-    // std::cout << std::endl;
-    // for(auto v : ret_vec_r) for(auto d : v) std::cout << d << std::endl;
     if(ret_vec_r.size() == idList.size()){
+      // std::cout << "read() " << std::endl;
+      // for(auto s : ret_vec_r) for(auto d : s) std::cout << d << std::endl;    ////////////////////////////////
+      // std::cout << std::endl;
+      // for(int i = 0; i < idList.size(); i++) std::cout << currentKp[i] << " " << currentKd[i] << ",";
+      // std::cout << std::endl;
+
       for(int i = 0; i < ret_vec_r.size(); i++){
+        if((int)ret_vec_r[i][0] != idList[i]){
+          ROS_WARN("id error %f != %d", ret_vec_r[i][0], idList[i]);
+        // }else{
+        //   ROS_INFO("id %f = %d", ret_vec_r[i][0], idList[i]);
+        }
         int idx = idIndex_[idList[i]];
         get_position[idx] = ret_vec_r[i][1];
         get_velocity[idx] = ret_vec_r[i][2];
         get_current[idx] = ret_vec_r[i][3] * torque_constant;   //bearのtorque_constantはgear_ratioを含む
         uint8_t err = ret_vec_r[i][4];  // error code
       }
+      if(kpChange){
+        for(int i = 0; i < idList.size(); i++){
+          int id = idList[i];
+          // std::cout << "i:" << i << " id:" << id << " idx:" << idIndex_[idList[i]] << std::endl;   ////////////////////////
+          currentKp[i] = bear_handle.GetPGainDirectForce(id);
+          currentKd[i] = bear_handle.GetDGainDirectForce(id);
+          ROS_INFO("currentKp %f , currentKd %f", currentKp[i], currentKd[i]);
+          if(bear_handle.GetErrorCode() & 0x7c){
+            ROS_ERROR("ERROR CODE: %d", bear_handle.GetErrorCode());
+          }
+          // int cmd_kp = (int)(joints_[a2jMap[i]].dfm[DFM_KP] * 10);
+          // int cmd_kd = (int)(joints_[a2jMap[i]].dfm[DFM_KD] * 10);
+          // int crt_kp = (int)(currentKp[i] * 10);
+          // int crt_kd = (int)(currentKd[i] * 10);
+          // if(cmd_kp != crt_kp || cmd_kd != crt_kd){
+          //   kpCheck = false;
+          //   ROS_INFO("kpCheck False %d %f %f %f %f", i, joints_[a2jMap[i]].dfm[DFM_KP], currentKp[i], joints_[a2jMap[i]].dfm[DFM_KD], currentKd[i]);
+          // }
+        }
+        // if(kpCheck) kpChange = false;
+        kpChange = false;
+      }
     }else{
-      ROS_ERROR("read data fault");
+      ROS_ERROR("read data fault ret_vec_r:%ld idList:%ld", ret_vec_r.size(), idList.size());
     }
   }
   for(auto id : gimIdList){
@@ -615,21 +684,22 @@ void HardwareInterface::read()
     joints_[idx].effort = convertActuator2Joint(idx, get_current);
     // ROS_INFO("[%d] pos %f vel %f cur %f", idx, joints_[idx].position, joints_[idx].velocity, joints_[idx].effort);
   }
-  if(interface_ == "effort"){
+  if(interface_ == "effort" || interface_ == "dfm"){
     for(uint8_t idx = 0; idx < act_size; idx++){
       if(protect[idx]){
         counter_effort[idx] = -kd[idx] * joints_[idx].velocity;
         ROS_ERROR("joint[%d] EFFORT PROTECTION ALREADY ON", idx);
       }
-      if(joints_[idx].effort_command != 0){
+      if(joints_[idx].dfm[DFM_EFT] != 0.0){
+        // ROS_INFO("joint[%d] effort = %f", idx, joints_[idx].dfm[2]);
         if(joints_[idx].position > limitPangle[idx]){
           protect[idx] = true;
           ROS_ERROR("joint[%d] EFFORT PROTECTION ON %f > %f", idx, joints_[idx].position ,limitPangle[idx]);
         }else if(joints_[idx].position < limitMangle[idx]){
           protect[idx] = true;
           ROS_ERROR("joint[%d] EFFORT PROTECTION ON %f < %f", idx, joints_[idx].position ,limitMangle[idx]);
-        }else{
-          ROS_INFO("joint[%d] angle within range %f <= %f <= %f", idx, limitMangle[idx], joints_[idx].position ,limitPangle[idx]);
+        // }else{
+        //   ROS_INFO("joint[%d] angle within range %f <= %f <= %f", idx, limitMangle[idx], joints_[idx].position ,limitPangle[idx]);
         }
         if(protect[idx]) counter_effort[idx] = -kd[idx] * joints_[idx].velocity;
       // }else{
@@ -639,7 +709,7 @@ void HardwareInterface::read()
   }
   if(first){
     for(uint8_t idx = 0; idx < act_size; idx++){
-      joints_[idx].position_command = joints_[idx].position;
+      joints_[idx].dfm[0] = joints_[idx].position;
     }
     first = false;
   }
@@ -652,34 +722,105 @@ void HardwareInterface::write()
   int col = bearActuator_.size() + gimActuator_.size();
   int row = robotJoint_.size();
 
-  Eigen::MatrixXd joint_data(col, 1);
-  if(interface_ == "position") for(int i = 0; i < col; i++) joint_data(i, 0) = joints_[i].position_command;
-  else if(interface_ == "velocity") for(int i = 0; i < col; i++) joint_data(i, 0) = joints_[i].velocity_command;
-  else if(interface_ == "effort") for(int i = 0; i < col; i++){
-    if(protect[i]) joint_data(i, 0) = counter_effort[i];
-    else joint_data(i, 0) = joints_[i].effort_command;
+  Eigen::MatrixXd position_data(col, 1);
+  Eigen::MatrixXd velocity_data(col, 1);
+  Eigen::MatrixXd effort_data(col, 1);
+  if(interface_ == "dfm" || interface_ == "position"){
+    for(int i = 0; i < col; i++){
+      position_data(i, 0) = joints_[i].dfm[DFM_POS];
+      velocity_data(i, 0) = joints_[i].dfm[DFM_VEL];
+      effort_data(i, 0) = joints_[i].dfm[DFM_EFT];
+    }
+    // for(int i = 0; i < col; i++){
+    //   ROS_INFO("dfm %f %f %f %f %f %f", joints_[i].dfm[0], joints_[i].dfm[1], joints_[i].dfm[2], joints_[i].dfm[3], joints_[i].dfm[4], joints_[i].dfm[5]);
+    // }
   }
-  Eigen::MatrixXd actuator_data(col, 1);
-  actuator_data = j2aMat * joint_data;
-  // std::cout << "actuator_data " << actuator_data << std::endl;
-  if (strcmp(interface_.c_str(), "position") == 0){
+  else if(interface_ == "position") for(int i = 0; i < col; i++) position_data(i, 0) = joints_[i].dfm[DFM_POS];
+  else if(interface_ == "velocity") for(int i = 0; i < col; i++) velocity_data(i, 0) = joints_[i].dfm[DFM_VEL];
+  else if(interface_ == "effort") for(int i = 0; i < col; i++){
+    if(protect[i]) effort_data(i, 0) = counter_effort[i];
+    else effort_data(i, 0) = joints_[i].dfm[DFM_EFT];
+  }
+  Eigen::MatrixXd actuator_pos_data(col, 1);
+  Eigen::MatrixXd actuator_vel_data(col, 1);
+  Eigen::MatrixXd actuator_eft_data(col, 1);
+  actuator_pos_data = j2aMat * position_data;
+  actuator_vel_data = j2aMat * velocity_data;
+  actuator_eft_data = j2aMat * effort_data;
+  // std::cout << "actuator_pos_data " << actuator_pos_data << std::endl;
+
+  //Kp, Kd は複合関節の設定は同じという前提でa2jMapにて代表とするジョイントのKp,Kdを適用する。
+
+  if (interface_ ==  "dfm"){
     std::vector<std::vector<float>> data;
     for(auto id : idList){
       int idx = idIndex_[id];
       std::vector<float> _data;
-      _data.push_back(actuator_data(idx, 0));
+      _data.push_back(actuator_pos_data(idx, 0));
+      _data.push_back(actuator_vel_data(idx, 0));
+      _data.push_back(actuator_eft_data(idx, 0));
+      data.push_back(_data);
+    }
+    // for(int id = 0; id < data.size(); id++){           ///////////////////////////////////
+    //   std::cout << "id:" << id << " ";
+    //   for(auto b : data[id]){
+    //     std::cout << b << " ";
+    //   }
+    // }
+    // std::cout << std::endl;
+    if(!bear_handle.BulkWrite(idList, write_add, data)){
+      ROS_ERROR("BEAR ACTUATOR WRITE ERROR");
+      ROS_ERROR("ERROR CODE: %d", bear_handle.GetErrorCode());
+    // }else{
+    //   ROS_INFO("write success %d", bear_handle.GetErrorCode());
+    }
+    //恐らく、BulkRead, BulkWriteではconfig registerの読み書きができない。
+    //Kp、Kdの更新についてはregister個別に送受信するしかなさそう。
+    bool kpfirst = true;
+    for(auto id : idList){
+      int idx = idIndex_[id];
+      if(currentKp[idx] != joints_[a2jMap[idx]].dfm[DFM_KP] || currentKd[idx] != joints_[a2jMap[idx]].dfm[DFM_KD]){
+        if(kpfirst){
+          // bear_handle.GetID(idList[0]);
+          bear_handle.GetPresentPosition(idList[0]);
+          kpfirst = false;
+        }
+        std::cout << idx << " " << currentKp[idx] << " " << joints_[a2jMap[idx]].dfm[DFM_KP] << " " << currentKd[idx] << " " << joints_[a2jMap[idx]].dfm[DFM_KD] << std::endl;    ////////////////////////////
+        if(!bear_handle.SetPGainDirectForce(id, joints_[a2jMap[idx]].dfm[DFM_KP])){
+          ROS_ERROR("BEAR ACTUATOR WRITE ERROR");
+          ROS_ERROR("ERROR CODE: %d", bear_handle.GetErrorCode());
+        }else{
+          ROS_INFO("Kp change %d:%f => %f", id, currentKp[idx], joints_[a2jMap[idx]].dfm[DFM_KP]);
+        }
+        if(!bear_handle.SetDGainDirectForce(id, joints_[a2jMap[idx]].dfm[DFM_KD])){
+          ROS_ERROR("BEAR ACTUATOR WRITE ERROR");
+          ROS_ERROR("ERROR CODE: %d", bear_handle.GetErrorCode());
+        }else{
+          ROS_INFO("Kp change %d:%f => %f", id, currentKd[idx], joints_[a2jMap[idx]].dfm[DFM_KD]);
+        }
+        kpChange = true;
+      }
+    }
+  }
+  else if (interface_ ==  "position"){
+    std::vector<std::vector<float>> data;
+    for(auto id : idList){
+      int idx = idIndex_[id];
+      std::vector<float> _data;
+      _data.push_back(actuator_pos_data(idx, 0));
+      // std::cout << "idx:" << idx << " position:" << actuator_data(idx, 0) << " " << _data.back() << std::endl;
       data.push_back(_data);
     }
     if(!bear_handle.BulkWrite(idList, write_add, data)){
       ROS_ERROR("BEAR ACTUATOR WRITE ERROR");
     }
   }
-  else if (strcmp(interface_.c_str(), "effort") == 0){
+  else if (interface_ == "effort"){
     std::vector<std::vector<float>> data;
     for(auto id : idList){
       int idx = idIndex_[id];
       std::vector<float> _data;
-      _data.push_back(actuator_data(idx, 0) / torque_constant);
+      _data.push_back(actuator_eft_data(idx, 0) / torque_constant);
       // std::cout << "idx:" << idx << " effort:" << actuator_data(idx, 0) << " " << _data.back() << std::endl;
       data.push_back(_data);
     }
@@ -687,22 +828,38 @@ void HardwareInterface::write()
       ROS_ERROR("BEAR ACTUATOR WRITE ERROR");
     }
   }
-
   uint8_t err;
-  if (strcmp(interface_.c_str(), "position") == 0){
+  if (interface_ == "dfm"){
+    double tc = gim_handle.torque_constant * gim_handle.gear_ratio;
     for(auto id : gimIdList){
       int idx = gimIdIndex_[id];
-      if(gim_handle.SetPosition((uint16_t)id, actuator_data(idx, 0), 10, err) < 0){
+      // std::cout << "gim idx:" << idx << " position:" << actuator_data(idx, 0) << std::endl;
+      int refId = a2jMap[idx];
+      if(joints_[a2jMap[idx]].dfm[DFM_KP] > 0){   // position control
+        if(gim_handle.SetPosition((uint16_t)id, actuator_pos_data(idx, 0), 10, err) < 0){
+          ROS_ERROR("GIM ACTUATOR WRITE ERROR %d err:%d", id, err);
+        }
+      }else{
+        if(gim_handle.SetTorque((uint16_t)id, actuator_eft_data(idx, 0) / tc, 10, err) < 0){
+          ROS_ERROR("GIM ACTUATOR WRITE ERROR %d err:%d", id, err);
+        }
+      }
+    }
+  }
+  else if (interface_ == "position"){
+    for(auto id : gimIdList){
+      int idx = gimIdIndex_[id];
+      if(gim_handle.SetPosition((uint16_t)id, actuator_eft_data(idx, 0), 10, err) < 0){
         ROS_ERROR("GIM ACTUATOR WRITE ERROR %d err:%d", id, err);
       }
     }
   }
-  else if (strcmp(interface_.c_str(), "effort") == 0){
+  else if (interface_ == "effort"){
     double tc = gim_handle.torque_constant * gim_handle.gear_ratio;
     for(auto id : gimIdList){
       int idx = gimIdIndex_[id];
-      // std::cout << "idx:" << idx << " effort:" << actuator_data(idx, 0) << " " << actuator_data(idx, 0) / tc << std::endl;
-      if(gim_handle.SetTorque((uint16_t)id, actuator_data(idx, 0) / tc, 10, err) < 0){
+      // std::cout << "gim idx:" << idx << " effort:" << actuator_data(idx, 0) << " " << actuator_data(idx, 0) / tc << std::endl;
+      if(gim_handle.SetTorque((uint16_t)id, actuator_eft_data(idx, 0) / tc, 10, err) < 0){
         ROS_ERROR("GIM ACTUATOR WRITE ERROR %d err:%d", id, err);
       }
     }

@@ -1,0 +1,26 @@
+<launch>
+
+    <arg name="user_debug" default="false"/>
+    
+    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find hector_description)/xacro/bear_dfm_test.urdf'
+            DEBUG:=$(arg user_debug)"/>
+
+    <!-- for higher robot_state_publisher average rate-->
+    <!-- <param name="rate" value="1000"/> -->
+
+    <group if="true">
+    <rosparam file="$(find bear_actuator_dfm_ros)/config/lambda_leg_bear_effort_test_controllers.yaml" command = "load"/>
+    <node name="controller_spawner" pkg="controller_manager"
+            type="spawner" respawn="false"
+            output="screen" ns="/"
+            args="lambda_leg/joint_state_controller lambda_leg/L_test_controller lambda_leg/R_test_controller"/>
+    </group>
+
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+        <param name="publish_frequency" type="double" value="1000.0"/>
+    </node>
+
+    <node pkg="rviz" type="rviz" name="rviz" respawn="false" output="screen"
+        args="-d $(find bear_actuator_dfm_ros)/rviz/dfm_test.rviz"/>
+
+</launch>

@@ -1,0 +1,99 @@
+<?xml version="1.0" ?>
+<robot name="bear_dfm_test" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <link name="base">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0.001 0.001 0.001"/>
+            </geometry>
+        </visual>
+    </link>
+    <link name="actuator1">
+        <visual>
+            <origin rpy="0 0 0" xzy="0 0 0"/>
+            <geometry>
+                <box size="0.05 0.05 0.03"/>
+            </geometry>
+        </visual>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <mass value="0.25"/>
+            <inertia ixx="2193585.402e-9" 
+                     ixy="-31.775e-9" iyy="412257.108e-9" 
+                     ixz="-12830.536e-9" iyz="-30.175e-9" izz="2159649.914e-9"/>
+        </inertial>
+    </link>
+    <joint name="fixjoint1" type="fixed">
+        <parent link="base"/>
+        <child link="actuator1"/>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+    </joint>
+    <link name="arm1">
+        <visual>
+            <origin rpy="0 0 0" xzy="0 0 0"/>
+            <geometry>
+                <box size="0.1 0.01 0.005"/>
+            </geometry>
+        </visual>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <mass value="0.01"/>
+            <inertia ixx="2193585.402e-9" 
+                     ixy="-31.775e-9" iyy="412257.108e-9" 
+                     ixz="-12830.536e-9" iyz="-30.175e-9" izz="2159649.914e-9"/>
+        </inertial>
+    </link>
+    <joint name="L_test_joint" type="revolute">
+        <parent link="actuator1"/>
+        <child link="arm1"/>
+        <origin rpy="0 0 0" xyz="0 0 0.02"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="10.0" lower="-3.14" upper="3.14" velocity="20.0"/>
+    </joint>
+
+    <link name="actuator2">
+        <visual>
+            <origin rpy="0 0 0" xzy="0 0 0"/>
+            <geometry>
+                <box size="0.05 0.05 0.03"/>
+            </geometry>
+        </visual>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <mass value="0.25"/>
+            <inertia ixx="2193585.402e-9" 
+                     ixy="-31.775e-9" iyy="412257.108e-9" 
+                     ixz="-12830.536e-9" iyz="-30.175e-9" izz="2159649.914e-9"/>
+        </inertial>
+    </link>
+    <joint name="fixjoint2" type="fixed">
+        <parent link="base"/>
+        <child link="actuator2"/>
+        <origin rpy="0 0 0" xyz="0 0.06 0"/>
+    </joint>
+    <link name="arm2">
+        <visual>
+            <origin rpy="0 0 0" xzy="0 0 0"/>
+            <geometry>
+                <box size="0.1 0.01 0.005"/>
+            </geometry>
+        </visual>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <mass value="0.01"/>
+            <inertia ixx="2193585.402e-9" 
+                     ixy="-31.775e-9" iyy="412257.108e-9" 
+                     ixz="-12830.536e-9" iyz="-30.175e-9" izz="2159649.914e-9"/>
+        </inertial>
+    </link>
+    <joint name="R_test_joint" type="revolute">
+        <parent link="actuator2"/>
+        <child link="arm2"/>
+        <origin rpy="0 0 0" xyz="0 0 0.02"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="10.0" lower="-3.14" upper="3.14" velocity="20.0"/>
+    </joint>
+
+</robot>
+

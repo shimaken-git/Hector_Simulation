@@ -3,8 +3,7 @@ Copyright (c) 2018-2019, Unitree Robotics.Co.Ltd. All rights reserved.
 Use of this source code is governed by the MPL-2.0 license, see LICENSE.
 ************************************************************************/
 
-// #include "westwood_legged_control/joint_controller.h"
-#include "joint_controller.h"
+#include <westwood_legged_control/joint_controller.h>
 #include <pluginlib/class_list_macros.h>
 
 // #define rqtTune // use rqt or not
@@ -19,16 +18,16 @@ namespace westwood_legged_control
     }
 
     WestwoodJointController::~WestwoodJointController(){
-        sub_ft.shutdown();
+        // sub_ft.shutdown();
         sub_cmd.shutdown();
     }
 
-    void WestwoodJointController::setTorqueCB(const geometry_msgs::WrenchStampedConstPtr& msg)
-    {
-        if(isHip) sensor_torque = msg->wrench.torque.x;
-        else sensor_torque = msg->wrench.torque.y;
-        // printf("sensor torque%f\n", sensor_torque);
-    }
+    // void WestwoodJointController::setTorqueCB(const geometry_msgs::WrenchStampedConstPtr& msg)
+    // {
+    //     if(isHip) sensor_torque = msg->wrench.torque.x;
+    //     else sensor_torque = msg->wrench.torque.y;
+    //     // printf("sensor torque%f\n", sensor_torque);
+    // }
 
     void WestwoodJointController::setCommandCB(const westwood_legged_msgs::MotorCmdConstPtr& msg)
     {
@@ -47,24 +46,27 @@ namespace westwood_legged_control
     // Controller initialization in non-realtime
     bool WestwoodJointController::init(hardware_interface::EffortJointInterface *robot, ros::NodeHandle &n)
     {
-        isHip = false;
-        isThigh = false;
-        isCalf = false;
+        // isHip = false;
+        // isThigh = false;
+        // isCalf = false;
         // rqtTune = false;
+        ROS_INFO("init 1");
         sensor_torque = 0;
         name_space = n.getNamespace();
+        ROS_INFO("name space : %s", name_space.c_str());
         if (!n.getParam("joint", joint_name)){
             ROS_ERROR("No joint given in namespace: '%s')", n.getNamespace().c_str());
             return false;
         }
+        ROS_INFO("init 2");
         
         // load pid param from ymal only if rqt need 
         // if(rqtTune) {
-#ifdef rqtTune
-            // Load PID Controller using gains set on parameter server
-            if (!pid_controller_.init(ros::NodeHandle(n, "pid")))
-                return false;
-#endif
+// #ifdef rqtTune
+//             // Load PID Controller using gains set on parameter server
+//             if (!pid_controller_.init(ros::NodeHandle(n, "pid")))
+//                 return false;
+// #endif
         // }
 
         urdf::Model urdf; // Get URDF info about joint
@@ -72,21 +74,24 @@ namespace westwood_legged_control
             ROS_ERROR("Failed to parse urdf file");
             return false;
         }
+        ROS_INFO("init 3");
         joint_urdf = urdf.getJoint(joint_name);
         if (!joint_urdf){
             ROS_ERROR("Could not find joint '%s' in urdf", joint_name.c_str());
             return false;
         }
-        if(joint_name == "FR_hip_joint" || joint_name == "FL_hip_joint" || joint_name == "RR_hip_joint" || joint_name == "RL_hip_joint"){
-            isHip = true;
-        }
-        if(joint_name == "FR_calf_joint" || joint_name == "FL_calf_joint" || joint_name == "RR_calf_joint" || joint_name == "RL_calf_joint"){
-            isCalf = true;
-        }        
+        ROS_INFO("init 4");
+        // if(joint_name == "FR_hip_joint" || joint_name == "FL_hip_joint" || joint_name == "RR_hip_joint" || joint_name == "RL_hip_joint"){
+        //     isHip = true;
+        // }
+        // if(joint_name == "FR_calf_joint" || joint_name == "FL_calf_joint" || joint_name == "RR_calf_joint" || joint_name == "RL_calf_joint"){
+        //     isCalf = true;
+        // }        
         joint = robot->getHandle(joint_name);
+        ROS_INFO("init 5");
 
         // Start command subscriber
-        sub_ft = n.subscribe(name_space + "/" +"joint_wrench", 1, &WestwoodJointController::setTorqueCB, this);
+        // sub_ft = n.subscribe(name_space + "/" +"joint_wrench", 1, &WestwoodJointController::setTorqueCB, this);
         sub_cmd = n.subscribe("command", 20, &WestwoodJointController::setCommandCB, this);
 
         // pub_state = n.advertise<westwood_legged_msgs::MotorState>(name_space + "/state", 20); 
@@ -97,21 +102,21 @@ namespace westwood_legged_control
         return true;
     }
 
-    void WestwoodJointController::setGains(const double &p, const double &i, const double &d, const double &i_max, const double &i_min, const bool &antiwindup)
-    {
-        pid_controller_.setGains(p,i,d,i_max,i_min,antiwindup);
-    }
+    // void WestwoodJointController::setGains(const double &p, const double &i, const double &d, const double &i_max, const double &i_min, const bool &antiwindup)
+    // {
+    //     pid_controller_.setGains(p,i,d,i_max,i_min,antiwindup);
+    // }
 
-    void WestwoodJointController::getGains(double &p, double &i, double &d, double &i_max, double &i_min, bool &antiwindup)
-    {
-        pid_controller_.getGains(p,i,d,i_max,i_min,antiwindup);
-    }
+    // void WestwoodJointController::getGains(double &p, double &i, double &d, double &i_max, double &i_min, bool &antiwindup)
+    // {
+    //     pid_controller_.getGains(p,i,d,i_max,i_min,antiwindup);
+    // }
 
-    void WestwoodJointController::getGains(double &p, double &i, double &d, double &i_max, double &i_min)
-    {
-        bool dummy;
-        pid_controller_.getGains(p,i,d,i_max,i_min,dummy);
-    }
+    // void WestwoodJointController::getGains(double &p, double &i, double &d, double &i_max, double &i_min)
+    // {
+    //     bool dummy;
+    //     pid_controller_.getGains(p,i,d,i_max,i_min,dummy);
+    // }
 
     // Controller startup in realtime
     void WestwoodJointController::starting(const ros::Time& time)
@@ -129,7 +134,7 @@ namespace westwood_legged_control
         command.initRT(lastCmd);
         
 
-        pid_controller_.reset();
+        // pid_controller_.reset();
     }
 
     // Controller update loop in realtime
@@ -171,10 +176,10 @@ namespace westwood_legged_control
         
         // rqt set P D gains
         // if(rqtTune) {
-#ifdef rqtTune
-            double i, i_max, i_min;
-            getGains(servoCmd.posStiffness,i,servoCmd.velStiffness,i_max,i_min);
-#endif
+// #ifdef rqtTune
+//             double i, i_max, i_min;
+//             getGains(servoCmd.posStiffness,i,servoCmd.velStiffness,i_max,i_min);
+// #endif
         // } 
 
         currentPos = joint.getPosition();

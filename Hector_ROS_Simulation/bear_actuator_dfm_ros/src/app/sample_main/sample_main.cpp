@@ -23,9 +23,13 @@ int main(int argc, char *argv[]) {
   std::cout << "RoMeLa CBEAR sample code." << std::endl;
 
   char *dev_name = (char *) DEVICENAME;
+  char log[256];
 
   // Initialize BEAR instance
   bear::BEAR bear_handle = bear::BEAR(dev_name, 8000000);
+  std::cout << "test" <<std::endl;
+  bear_handle.connect(log);
+  std::cout << "log " << log << std::endl;
 
   // Sample command
   float ret_val{0.0};

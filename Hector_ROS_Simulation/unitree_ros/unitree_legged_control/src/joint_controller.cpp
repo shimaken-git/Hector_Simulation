@@ -58,7 +58,6 @@ namespace unitree_legged_control
             ROS_ERROR("No joint given in namespace: '%s')", n.getNamespace().c_str());
             return false;
         }
-        
         // load pid param from ymal only if rqt need 
         // if(rqtTune) {
 #ifdef rqtTune

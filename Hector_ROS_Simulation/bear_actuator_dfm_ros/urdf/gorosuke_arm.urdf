@@ -1,0 +1,185 @@
+<?xml version="1.0" ?>
+<robot name="gorosuke_arm">
+  <material name="Silver">
+    <color rgba="0.753 0.753 0.753 1.0"/>
+  </material>
+  <material name="red">
+    <color rgba="1 0 0 1"/>
+  </material>
+  <material name="blue">
+    <color rgba="0 0 1 1"/>
+  </material>
+  <material name="yellow">
+    <color rgba="1 1 0 1"/>
+  </material>
+  <material name="black">
+    <color rgba="0.3 0.3 0.3 1"/>
+  </material>
+  <material name="silver">
+    <color rgba="0.8 0.8 0.8 1"/>
+  </material>
+  <link name="base_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.020"/>
+      <geometry>
+        <cylinder length="0.040" radius="0.030"/>
+      </geometry>
+      <material name="black" />
+    </visual>
+  </link>
+  <link name="pole_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.040"/>
+      <geometry>
+        <cylinder length="0.080" radius="0.025"/>
+      </geometry>
+      <material name="blue" />
+    </visual>
+  </link>
+  <joint name="joint4" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0.040"/>
+    <parent link="base_link"/>
+    <child link="pole_link"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-2.4435" upper="2.4435" velocity="3.1415"/>
+  </joint>
+  <link name="sholder_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.030"/>
+      <geometry>
+        <box size="0.050 0.030 0.060"/>
+      </geometry>
+      <material name="black" />
+    </visual>
+  </link>
+  <joint name="fixedjoint1" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0.080"/>
+    <parent link="pole_link"/>
+    <child link="sholder_link"/>
+    <axis xyz="1 0 0"/>
+  </joint>
+  <link name="sholder_pitch_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0.040 0 -0.015"/>
+      <geometry>
+        <box size="0.030 0.050 0.060"/>
+      </geometry>
+      <material name="black" />
+    </visual>
+  </link>
+  <joint name="joint1" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0.035"/>
+    <parent link="sholder_link"/>
+    <child link="sholder_pitch_link"/>
+    <axis xyz="1 0 0"/>
+    <limit effort="100" lower="-2.4435" upper="2.4435" velocity="3.1415"/>
+  </joint>
+  <link name="arm1_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0.060 0 0"/>
+      <geometry>
+        <box size="0.150 0.005 0.040"/>
+      </geometry>
+      <material name="silver" />
+    </visual>
+  </link>
+  <joint name="joint2" type="revolute">
+    <origin rpy="0 0 0" xyz="0.040 -0.030 0"/>
+    <parent link="sholder_pitch_link"/>
+    <child link="arm1_link"/>
+    <axis xyz="0 -1 0"/>
+    <limit effort="100" lower="-2.4435" upper="2.4435" velocity="3.1415"/>
+  </joint>
+  <link name="knee_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0.025 0"/>
+      <geometry>
+        <box size="0.060 0.040 0.030"/>
+      </geometry>
+      <material name="black" />
+    </visual>
+  </link>
+  <joint name="fixedjoint2" type="fixed">
+    <origin rpy="0 0 0" xyz="0.105 0 0"/>
+    <parent link="arm1_link"/>
+    <child link="knee_link"/>
+    <axis xyz="1 0 0"/>
+  </joint>
+  <link name="arm21_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0.005 0 0"/>
+      <geometry>
+        <box size="0.040 0.005 0.030"/>
+      </geometry>
+      <material name="silver" />
+    </visual>
+  </link>
+  <joint name="joint3" type="revolute">
+    <origin rpy="0 0 0" xyz="0.130 -0.005 0"/>
+    <parent link="arm1_link"/>
+    <child link="arm21_link"/>
+    <axis xyz="0 -1 0"/>
+    <limit effort="100" lower="-2.4435" upper="2.4435" velocity="3.1415"/>
+  </joint>
+  <link name="arm22_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0.025 0"/>
+      <geometry>
+        <box size="0.005 0.050 0.030"/>
+      </geometry>
+      <material name="black" />
+    </visual>
+  </link>
+  <joint name="fixedjoint3" type="fixed">
+    <origin rpy="0 0 0" xyz="0.025 0 0"/>
+    <parent link="arm21_link"/>
+    <child link="arm22_link"/>
+    <axis xyz="1 0 0"/>
+  </joint>
+  <link name="arm23_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0.020 0.025 0.080"/>
+      <geometry>
+        <cylinder length="0.130" radius="0.015"/>
+      </geometry>
+      <material name="yellow" />
+    </visual>
+  </link>
+  <joint name="fixedjoint4" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="arm22_link"/>
+    <child link="arm23_link"/>
+    <axis xyz="1 0 0"/>
+  </joint>
+  <link name="neck_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.015"/>
+      <geometry>
+        <cylinder length="0.030" radius="0.020"/>
+      </geometry>
+      <material name="black" />
+    </visual>
+  </link>
+  <joint name="fixedjoint5" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0.060"/>
+    <parent link="sholder_link"/>
+    <child link="neck_link"/>
+    <axis xyz="1 0 0"/>
+  </joint>
+  <link name="head_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <sphere radius="0.020"/>
+      </geometry>
+      <material name="red" />
+    </visual>
+  </link>
+  <joint name="fixedjoint6" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0.030"/>
+    <parent link="neck_link"/>
+    <child link="head_link"/>
+    <axis xyz="1 0 0"/>
+  </joint>
+</robot>
+
