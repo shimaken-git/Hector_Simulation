@@ -10,10 +10,11 @@ using Eigen::Dynamic;
 
 
 /* =========================== Controller ============================= */
-ConvexMPCLocomotion::ConvexMPCLocomotion(double _dt, int _iterations_between_mpc) : 
+ConvexMPCLocomotion::ConvexMPCLocomotion(double _dt, int _iterations_between_mpc, double _height) : 
  iterationsBetweenMPC(_iterations_between_mpc),
  horizonLength(10),
  dt(_dt),
+ height(_height),
  walking(horizonLength, Vec2<int>(0, 5), Vec2<int>(5, 5), "Walking"),
  standing(horizonLength, Vec2<int>(0, 0), Vec2<int>(10, 10), "Standing")
 {
@@ -60,17 +61,7 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
 
   world_position_desired[0] += dt * v_des_world[0];
   world_position_desired[1] += dt * v_des_world[1];
-#ifdef _HECTOR_
-  world_position_desired[2] = 0.55; //.5;;;
-#else
-#ifdef _LAMBDA_
-  world_position_desired[2] = 0.292 + 0.049;   // wwlambda + PC
-#else
-#ifdef _LAMBDA_R2_
-  world_position_desired[2] = 0.335;   // wwlambda_r2 + PC
-#endif
-#endif
-#endif
+  world_position_desired[2] = height;
   // get then foot location in world frame
   for (int i = 0; i < 2; i++)
   {
@@ -114,18 +105,7 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
     {
       pBody_des[0] = seResult.position[0];
       pBody_des[1] = seResult.position[1];
-#ifdef _HECTOR_
-      pBody_des[2] = 0.55;
-#else
-#ifdef _LAMBDA_
-      pBody_des[2] = 0.292 + 0.049;   // wwlambda + PC
-#else
-#ifdef _LAMBDA_R2_
-      pBody_des[2] = 0.335;   // wwlambda_r2 + PC
-#endif
-#endif
-#endif
-
+      pBody_des[2] = height;
       vBody_des[0] = 0;
       vBody_des[0] = 0;
     }
@@ -311,17 +291,7 @@ void ConvexMPCLocomotion::updateMPCIfNeeded(int *mpcTable, ControlFSMData &data,
                               0.0,    // 2
                               xStart,                                   // 3
                               yStart,                                   // 4
-#ifdef _HECTOR_
-                              0.55 ,   // 5
-#else
-#ifdef _LAMBDA_
-                              0.292 + 0.049 ,   // 5    // wwlambda + PC
-#else
-#ifdef _LAMBDA_R2_
-                              0.335 ,   // 5    // wwlambda_r2 + PC
-#endif
-#endif
-#endif
+                              height,   // 5
                               0,                                        // 6
                               0,                                        // 7
                               stateCommand->data.stateDes[11],          // 8

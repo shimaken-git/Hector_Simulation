@@ -41,6 +41,13 @@
           -J R_toe_joint 0.785398163
           -model hector_gazebo -param robot_description "/>
 
+          <!-- -J L_thigh_joint 0.523598776
+          -J L_calf_joint -1.047197551
+          -J L_toe_joint 0.523598776
+          -J R_thigh_joint 0.523598776
+          -J R_calf_joint -1.047197551
+          -J R_toe_joint 0.523598776 -->
+
           <!-- -J L_thigh_joint 0
           -J L_calf_joint 0
           -J L_toe_joint 0

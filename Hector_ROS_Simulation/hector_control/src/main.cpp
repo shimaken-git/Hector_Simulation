@@ -37,12 +37,12 @@ int main(int argc, char ** argv)
     std::string robot_name = "hector";
     std::cout << "robot name " << robot_name << std::endl;
 
-    ioInter = new CheatIO(robot_name);
-    ros::Rate rate(1000);
-
     double dt = 0.001;
     Biped biped;
     // biped.setBiped();
+
+    ioInter = new CheatIO(robot_name, biped.height);
+    ros::Rate rate(1000);
 
     LegController* legController = new LegController(biped);
     LowlevelCmd* cmd = new LowlevelCmd();

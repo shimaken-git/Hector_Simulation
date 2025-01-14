@@ -53,23 +53,36 @@ t_pos_l = [
     np.matrix([[0.05], [-0.1], [-0.32]]),
 ]
 
+limit_max = [0.2, 0.3, 1.5, 2.5, 1.5, 0.2, 0.3, 1.5, 2.5, 1.5]
+limit_min = [-0.2, -0.3, -1.5, -0.05, -1.5, -0.2, -0.3, -1.5, -0.05, -1.5]
+
+def joint_data_check(j_data):
+    global limit_max, limit_min
+    res = True
+    for i, j in enumerate(j_data):
+        if j > limit_max[i] or limit_min[i] > j:
+            res = False
+    return res
+
 def joint_publish(joint_l, joint_r, sec, nsec):
     global idxlist, pub, joint_names
 
+    mtcmd = MotorCmd()
+    mtcmd.dq = 0.0
+    mtcmd.tau = 0.0
+    mtcmd.Kp = 20.0
+    mtcmd.Kd = 0.5
+
     joint_ = joint_l + joint_r
-    tj = JointTrajectory()
-    tj.joint_names = ['L_calf_joint', 'L_hip2_joint', 'L_hip_joint', 'L_thigh_joint', 'L_toe_joint', 'R_calf_joint', 'R_hip2_joint', 'R_hip_joint', 'R_thigh_joint', 'R_toe_joint']
-    pnt = JointTrajectoryPoint()
-    pnt.positions = [0.0] * 10
-    for i, nm in enumerate(tj.joint_names):
-        pnt.positions[i] = joint_[indexlist[nm]]
-    for i, j in enumerate(joint_):
-        print(i, j)
-    for i, p in enumerate(pnt.positions):
-        print(i, p, tj.joint_names[i])
-    pnt.time_from_start = rospy.Duration(sec, nsec)
-    tj.points.append(pnt)
-    # pub.publish(tj)
+    if joint_data_check(joint_):
+        for a in range(10):
+            mtcmd.q = joint_[a]
+            print(joint_[a], mtcmd.q)
+            pub[a].publish(mtcmd)
+    else:
+        print("Joint Limit Over.")
+        for i, a in enumerate(joint_):
+            print(limit_max[i], ">", a, ">", limit_min[i])
 
 def leg_pub(tgt_left_z, tgt_right_z, sec, nsec):
     tgt_y = 0.0
@@ -237,7 +250,7 @@ def leg_control():
                 pub[i].publish(mtcmd)
             command = ""
             jacob_first = True
-        elif command == "zero2" :
+        elif command == "torqueoff" :
             print("command", command)
             mtcmd = MotorCmd()
             mtcmd.q = 0.0
@@ -411,35 +424,6 @@ def leg_control():
             print(rot.as_euler('xyz', degrees=True))
             print(rot.as_euler('xyz'))
 
-        elif command == "torque" :
-            thigh = Float64()
-            calf = Float64()
-            l_hip2 = Float64()
-            r_hip2 = Float64()
-
-            thigh.data = 0.3
-            calf.data = -0.5
-            l_hip2.data = 0.2
-            r_hip2.data = -0.2
-
-            pub[1].publish(l_hip2)
-            pub[2].publish(thigh)
-            pub[3].publish(calf)
-            pub[6].publish(r_hip2)
-            pub[7].publish(thigh)
-            pub[8].publish(calf)
-
-        elif command == "torque0" :
-            zero = Float64()
-            zero.data = 0.0
-
-            pub[1].publish(zero)
-            pub[2].publish(zero)
-            pub[3].publish(zero)
-            pub[6].publish(zero)
-            pub[7].publish(zero)
-            pub[8].publish(zero)
-        
         inp_list = ["none", 0, 0, 0, 0]
         if inp_list[0] == "bending" :    # move stand pose    > bending y z time [-0.1 > z > -0.32]
             if len(inp_list) == 4 and float(inp_list[2]) < -0.1:

@@ -10,7 +10,7 @@ inline void RosShutDown(int sig){
 	ros::shutdown();
 }
 
-CheatIO::CheatIO(std::string robot_name):IOInterface(), _subSpinner(1)
+CheatIO::CheatIO(std::string robot_name, double _height):IOInterface(), _subSpinner(1), height(_height)
 {
     // int argc; char **argv;
     // ros::init(argc, argv, "unitree_gazebo_servo");
@@ -74,17 +74,7 @@ void CheatIO::recvState(LowlevelState *state)
         state->position[i] = _highState.position[i];
         state->vWorld[i] = _highState.velocity[i];
     }
-#ifdef _HECTOR_
-    if(state->position[2] == 0) state->position[2] = 0.545;    //初回にゼロを返してしまうので固定値を入れる。（Hector用）
-#else
-#ifdef _LAMBDA_
-    if(state->position[2] == 0) state->position[2] = 0.290 + 0.049;    //初回にゼロを返してしまうので固定値を入れる。（wwlambda用）
-#else
-#ifdef _LAMBDA_R2_
-    if(state->position[2] == 0) state->position[2] = 0.335;    //初回にゼロを返してしまうので固定値を入れる。（wwlambda_r2用）
-#endif
-#endif
-#endif
+    if(state->position[2] == 0) state->position[2] = height;    //初回にゼロを返してしまうので固定値を入れる。
     state->imu.quaternion[3] = _highState.imu.quaternion[3];
 }
 

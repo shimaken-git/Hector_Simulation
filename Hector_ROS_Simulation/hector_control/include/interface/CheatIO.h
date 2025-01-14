@@ -20,7 +20,7 @@
 class CheatIO : public IOInterface
 {
     public:
-        CheatIO(std::string robot_name);
+        CheatIO(std::string robot_name, double _height);
         ~CheatIO();
         void sendRecv(const LowlevelCmd *cmd, LowlevelState *state);
     private:
@@ -33,6 +33,8 @@ class CheatIO : public IOInterface
         unitree_legged_msgs::LowCmd _lowCmd;
         unitree_legged_msgs::HighState _highState;
         ros::AsyncSpinner _subSpinner;
+
+        double height;
 
 
         std::string _robot_name;

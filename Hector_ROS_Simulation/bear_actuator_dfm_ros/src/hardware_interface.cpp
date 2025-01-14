@@ -388,12 +388,20 @@ bool HardwareInterface::loadActuators(void)
     // uint16_t model_number = 0;
     if ((bool)bear_handle.ping((uint8_t)act.second) == false)
     {
+
       ROS_ERROR("Can't find Actuator ID '%d' error code %d", act.second, bear_handle.GetErrorCode());
       result = false;
       bearValid_[act.first] = false;
     }else{
-      // ROS_INFO("Name : %s, ID : %d, Model Number : %d", act.first.c_str(), act.second, model_number);
-      ROS_INFO("Name : %s, ID : %d", act.first.c_str(), act.second);
+      uint8_t err = bear_handle.GetErrorCode();
+      if((err & 0x7f) == 0) ROS_INFO("Name : %s, ID : %d", act.first.c_str(), act.second);
+      else if((err & 0x7f) == 0x08){
+        ROS_ERROR("%s ID: %d ESTOP", act.first.c_str(), act.second);
+        result = false;
+      }else{
+        ROS_INFO("%s, ID : %d %02x", act.first.c_str(), act.second, err);
+        result = false;
+      }
     }
   }
 
@@ -781,8 +789,8 @@ void HardwareInterface::write()
       int idx = idIndex_[id];
       if(currentKp[idx] != joints_[a2jMap[idx]].dfm[DFM_KP] || currentKd[idx] != joints_[a2jMap[idx]].dfm[DFM_KD]){
         if(kpfirst){
-          // bear_handle.GetID(idList[0]);
-          bear_handle.GetPresentPosition(idList[0]);
+          bear_handle.GetID(idList[0]);
+          // bear_handle.GetPresentPosition(idList[0]);
           kpfirst = false;
         }
         std::cout << idx << " " << currentKp[idx] << " " << joints_[a2jMap[idx]].dfm[DFM_KP] << " " << currentKd[idx] << " " << joints_[a2jMap[idx]].dfm[DFM_KD] << std::endl;    ////////////////////////////

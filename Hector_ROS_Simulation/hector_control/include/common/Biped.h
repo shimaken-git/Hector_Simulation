@@ -18,7 +18,8 @@ class Biped {
             leg_roll_offset_z(-0.0705),
             hipLinkLength(0.018),
             thighLinkLength(0.22),
-            calfLinkLength(0.22) {}
+            calfLinkLength(0.22)
+            height(0.55) {}
         Vec3<double> getHipYawLocation(int leg) const {
             checkLegIndex(leg);
             return Vec3<double>(leg_yaw_offset_x, leg == 0 ? leg_yaw_offset_y : -leg_yaw_offset_y, leg_yaw_offset_z);
@@ -28,6 +29,7 @@ class Biped {
             checkLegIndex(leg);
             return Vec3<double>(leg_roll_offset_x, leg == 0 ? leg_roll_offset_y : -leg_roll_offset_y, leg_roll_offset_z);
         }
+        const double height;
 
     private:
         void checkLegIndex(int leg) const {
@@ -56,7 +58,8 @@ class Biped {
             leg_roll_offset_z(0.0),
             hipLinkLength(0.0),
             thighLinkLength(0.153),
-            calfLinkLength(0.153) {}
+            calfLinkLength(0.153)
+            height(0.292 + 0.049) {}
         Vec3<double> getHipYawLocation(int leg) const {
             checkLegIndex(leg);
             return Vec3<double>(leg_yaw_offset_x, leg == 0 ? leg_yaw_offset_y : -leg_yaw_offset_y, leg_yaw_offset_z);
@@ -66,6 +69,7 @@ class Biped {
             checkLegIndex(leg);
             return Vec3<double>(leg_roll_offset_x, leg == 0 ? leg_roll_offset_y : -leg_roll_offset_y, leg_roll_offset_z);
         }
+        const double height;
 
     private:
         void checkLegIndex(int leg) const {
@@ -94,7 +98,8 @@ class Biped {
             leg_roll_offset_z(0.0),
             hipLinkLength(0.0),
             thighLinkLength(0.153),
-            calfLinkLength(0.153) {}
+            calfLinkLength(0.153),
+            height(0.335) {}
         Vec3<double> getHipYawLocation(int leg) const {
             checkLegIndex(leg);
             return Vec3<double>(leg_yaw_offset_x, leg == 0 ? leg_yaw_offset_y : -leg_yaw_offset_y, leg_yaw_offset_z);
@@ -104,6 +109,7 @@ class Biped {
             checkLegIndex(leg);
             return Vec3<double>(leg_roll_offset_x, leg == 0 ? leg_roll_offset_y : -leg_roll_offset_y, leg_roll_offset_z);
         }
+        const double height;
 
     private:
         void checkLegIndex(int leg) const {

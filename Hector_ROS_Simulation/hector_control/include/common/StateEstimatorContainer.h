@@ -145,7 +145,7 @@ class StateEstimatorContainer {
 
     // init w_positon
     void init_p_world(){
-        _data.result->p_world = Vec3<double>(0,0,0.335);
+        _data.result->p_world = Vec3<double>(0, 0, _data.legControllerData->hector->height);
         _data.result->p_world_confirm = false;
         for(int i = 0; i < 4; i++) _data.result->tipPrint_confirm[i] = false;
     }

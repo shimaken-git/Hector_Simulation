@@ -37,7 +37,7 @@ struct CMPC_Result {
 class ConvexMPCLocomotion {
 public:
     // Constructors
-    ConvexMPCLocomotion(double _dt, int _iterations_between_mpc);
+    ConvexMPCLocomotion(double _dt, int _iterations_between_mpc, double _height);
   
     // Main Functionalities
     void run(ControlFSMData& data);
@@ -61,6 +61,8 @@ private:
     Vec2<double> swingTimes;
     FootSwingTrajectory<double> footSwingTrajectories[2];
     Gait walking, standing;
+
+    double height;
 
     // Feedback and Control Variables
     Mat3<double> Kp, Kd, Kp_stance, Kd_stance;
