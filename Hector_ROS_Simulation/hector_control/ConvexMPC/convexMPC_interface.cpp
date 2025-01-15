@@ -82,7 +82,7 @@ int has_solved = 0;
 
 void update_problem_data(double* p, double* v, double* q, double* w, 
                          double* r, double* joint_angles, double yaw, double* weights, 
-                         double* state_trajectory, double* Alpha_K, int* gait)
+                         double* state_trajectory, double* Alpha_K, int* gait, double mass)
 {
   mfp_to_flt(update.p,p,3);
   mfp_to_flt(update.v,v,3);
@@ -98,7 +98,7 @@ void update_problem_data(double* p, double* v, double* q, double* w,
   mfp_to_flt(update.Alpha_K,Alpha_K,12);
   mint_to_u8(update.gait,gait,2*problem_configuration.horizon);
 
-  solve_mpc(&update, &problem_configuration);//
+  solve_mpc(&update, &problem_configuration, mass);
   has_solved = 1;
 }
 

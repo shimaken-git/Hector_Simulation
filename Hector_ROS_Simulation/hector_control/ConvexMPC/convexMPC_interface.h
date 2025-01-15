@@ -40,6 +40,6 @@ EXTERNC void setup_problem(double dt, int horizon, double mu, double f_max);
 EXTERNC double get_solution(int index);
 EXTERNC void update_solver_settings(int max_iter, double rho, double sigma, double solver_alpha, double terminate, double use_jcqp);
 
-EXTERNC void update_problem_data(double* p, double* v, double* q, double* w, double* r, double* joint_angles, double yaw, double* weights, double* state_trajectory, double* Alpha_K, int* gait);
+EXTERNC void update_problem_data(double* p, double* v, double* q, double* w, double* r, double* joint_angles, double yaw, double* weights, double* state_trajectory, double* Alpha_K, int* gait, double mass);
 
 #endif

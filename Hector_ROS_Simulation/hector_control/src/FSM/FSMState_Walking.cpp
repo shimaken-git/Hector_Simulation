@@ -2,7 +2,7 @@
 
 FSMState_Walking::FSMState_Walking(ControlFSMData *data)
                  :FSMState(data, FSMStateName::WALKING, "walking"),
-                  Cmpc(0.001, 40, data->_biped->height) {
+                  Cmpc(0.001, 40, data->_biped->height, data->_biped->mass) {
                     std::cout << "FSMState_Walking construct end." << std::endl;
                   }
 

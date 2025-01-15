@@ -372,7 +372,7 @@ Matrix<fpt, 13, 13> A_ct;
 Matrix<fpt, 13, 12> B_ct_r;
 
 // Main function:
-void solve_mpc(update_data_t *update, problem_setup *setup)
+void solve_mpc(update_data_t *update, problem_setup *setup, double mass)
 {
   //Joint angles to compute foot rotation
   Matrix<fpt, 10, 1> q;
@@ -424,18 +424,7 @@ void solve_mpc(update_data_t *update, problem_setup *setup)
   x_0 << rpy(0), rpy(1), rpy(2), rs.p, rs.w, rs.v, 9.81f;
   I_world = rs.R * rs.I_body * rs.R.transpose(); // original
 
-#ifdef _HECTOR_
-  ct_ss_mats(I_world, 9.0, rs.r_feet, Rb, A_ct, B_ct_r);   //hector
-#else
-#ifdef _LAMBDA_
-  // ct_ss_mats(I_world, 2.5, rs.r_feet, Rb, A_ct, B_ct_r);   //wwlambda
-  ct_ss_mats(I_world, 3.5, rs.r_feet, Rb, A_ct, B_ct_r);   //wwlambda + PC
-#else
-#ifdef _LAMBDA_R2_
-  ct_ss_mats(I_world, 4.0, rs.r_feet, Rb, A_ct, B_ct_r);   //wwlambda_r2 + PC
-#endif
-#endif
-#endif
+  ct_ss_mats(I_world, mass, rs.r_feet, Rb, A_ct, B_ct_r);   //hector
 
   // Rotation of Foot:
   Matrix<fpt, 3, 3> R_foot_L;
@@ -507,8 +496,6 @@ void solve_mpc(update_data_t *update, problem_setup *setup)
   fpt lh = 0.06;
 #else
 #if defined(_LAMBDA_) || defined(_LAMBDA_R2_)
-  // fpt lt = 0.04;
-  // fpt lh = 0.02;
   fpt lt = 0.04;
   fpt lh = 0.02;
 #endif

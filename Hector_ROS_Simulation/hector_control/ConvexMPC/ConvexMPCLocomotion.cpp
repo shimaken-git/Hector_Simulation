@@ -10,16 +10,28 @@ using Eigen::Dynamic;
 
 
 /* =========================== Controller ============================= */
-ConvexMPCLocomotion::ConvexMPCLocomotion(double _dt, int _iterations_between_mpc, double _height) : 
+ConvexMPCLocomotion::ConvexMPCLocomotion(double _dt, int _iterations_between_mpc, double _height, double _mass) : 
  iterationsBetweenMPC(_iterations_between_mpc),
  horizonLength(10),
  dt(_dt),
  height(_height),
+ mass(_mass),
  walking(horizonLength, Vec2<int>(0, 5), Vec2<int>(5, 5), "Walking"),
  standing(horizonLength, Vec2<int>(0, 0), Vec2<int>(10, 10), "Standing")
 {
   gaitNumber = 1;
   dtMPC = dt * iterationsBetweenMPC;
+#ifdef _HECTOR_
+  f_max = 500;
+#else
+#ifdef _LAMBDA_
+  f_max = 100;
+#else
+#ifdef _LAMBDA_R2_
+  f_max = 100;
+#endif
+#endif
+#endif
   rpy_int[2] = 0;
   for (int i = 0; i < 2; i++)
     firstSwing[i] = true;
@@ -345,23 +357,12 @@ void ConvexMPCLocomotion::updateMPCIfNeeded(int *mpcTable, ControlFSMData &data,
 
     //MPC Solver Setup
     dtMPC = dt * iterationsBetweenMPC;
-#ifdef _HECTOR_
-    setup_problem(dtMPC, horizonLength, 0.25, 500);     // dt, horizon, mu, f_max
-#else
-#ifdef _LAMBDA_
-    // setup_problem(dtMPC, horizonLength, 0.25, 50);     // dt, horizon, mu, f_max
-    setup_problem(dtMPC, horizonLength, 0.25, 100);     // 胴体付き
-#else
-#ifdef _LAMBDA_R2_
-    setup_problem(dtMPC, horizonLength, 0.25, 100);     // 胴体付き
-#endif
-#endif
-#endif
+    setup_problem(dtMPC, horizonLength, 0.25, f_max);     // dt, horizon, mu, f_max
     
     //Solve MPC
     Timer t_mpc_solve;
     t_mpc_solve.start();
-    update_problem_data(p, v, quat, w, r, joint_angles ,yaw, weights, trajAll, Alpha_K, mpcTable);
+    update_problem_data(p, v, quat, w, r, joint_angles ,yaw, weights, trajAll, Alpha_K, mpcTable, mass);
     printf("MPC Solve time %f ms\n", t_mpc_solve.getMs());
 
     //Get solution and update foot forces    

@@ -9,7 +9,7 @@
 class Biped {
     public:
         Biped() :
-            mass(13.856),
+            mass(9.000),
             leg_yaw_offset_x(0.0),
             leg_yaw_offset_y(0.047),
             leg_yaw_offset_z(-0.1265),
@@ -30,6 +30,7 @@ class Biped {
             return Vec3<double>(leg_roll_offset_x, leg == 0 ? leg_roll_offset_y : -leg_roll_offset_y, leg_roll_offset_z);
         }
         const double height;
+        const double mass;
 
     private:
         void checkLegIndex(int leg) const {
@@ -41,14 +42,13 @@ class Biped {
         const double hipLinkLength, thighLinkLength, calfLinkLength;
         const double leg_yaw_offset_x, leg_yaw_offset_y, leg_yaw_offset_z;
         const double leg_roll_offset_x, leg_roll_offset_y, leg_roll_offset_z;
-        const double mass;
     };
 #else
 #ifdef _LAMBDA_
 class Biped {
     public:
         Biped() :
-            mass(4.500),
+            mass(2.500),
             leg_yaw_offset_x(0.0),
             leg_yaw_offset_y(0.053),    // wwlambda
             // leg_yaw_offset_z(-0.042),    // CoM
@@ -70,6 +70,7 @@ class Biped {
             return Vec3<double>(leg_roll_offset_x, leg == 0 ? leg_roll_offset_y : -leg_roll_offset_y, leg_roll_offset_z);
         }
         const double height;
+        const double mass;
 
     private:
         void checkLegIndex(int leg) const {
@@ -81,14 +82,13 @@ class Biped {
         const double hipLinkLength, thighLinkLength, calfLinkLength;
         const double leg_yaw_offset_x, leg_yaw_offset_y, leg_yaw_offset_z;
         const double leg_roll_offset_x, leg_roll_offset_y, leg_roll_offset_z;
-        const double mass;
     };
 #else
 #ifdef _LAMBDA_R2_
 class Biped {
     public:
         Biped() :
-            mass(4.500),
+            mass(4.000),
             leg_yaw_offset_x(0.0),
             // leg_yaw_offset_y(0.080),     // wwlambda_r2
             leg_yaw_offset_y(0.053),     // wwlambda_r2
@@ -110,6 +110,7 @@ class Biped {
             return Vec3<double>(leg_roll_offset_x, leg == 0 ? leg_roll_offset_y : -leg_roll_offset_y, leg_roll_offset_z);
         }
         const double height;
+        const double mass;
 
     private:
         void checkLegIndex(int leg) const {
@@ -121,7 +122,6 @@ class Biped {
         const double hipLinkLength, thighLinkLength, calfLinkLength;
         const double leg_yaw_offset_x, leg_yaw_offset_y, leg_yaw_offset_z;
         const double leg_roll_offset_x, leg_roll_offset_y, leg_roll_offset_z;
-        const double mass;
     };
 #endif
 #endif
