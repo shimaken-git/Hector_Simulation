@@ -540,6 +540,8 @@ void solve_mpc(update_data_t *update, problem_setup *setup, double mass)
   F_control.block<1, 12>(7, 0) //Fz Leg 1
       << 0, 0, 2.f, 0, 0, 0,   0, 0, 0, 0, 0, 0;
 
+//  -lt_vecをlt_vecとすると、腰の位置を少し上げても一応歩ける。
+// しかし、後ろに少しずつ下がってしまう。腰の位置を低くすると下がる度合いが顕著になる。
 
 
 //leg 2
@@ -551,7 +553,7 @@ void solve_mpc(update_data_t *update, problem_setup *setup, double mass)
       <<   0, 0, 0, 0, -mu, 1.f, 0, 0, 0, 0, 0, 0;
   F_control.block<1, 12>(11, 0)
       <<   0, 0, 0, 0, mu, 1.f, 0, 0, 0, 0, 0, 0;
-  F_control.block<1, 12>(12, 0) //Mx Leg 1
+  F_control.block<1, 12>(12, 0) //Mx Leg 2
       << 0, 0, 0, 0, 0, 0, 0, 0, 0, Moment_selection * R_foot_R.transpose()* rs.R.transpose();
   F_control.block<1, 12>(13, 0) //Line Leg 2
       << 0, 0, 0,     -lt_vec * R_foot_R.transpose()* rs.R.transpose(), 0, 0, 0,    M_vec * R_foot_R.transpose()* rs.R.transpose();
