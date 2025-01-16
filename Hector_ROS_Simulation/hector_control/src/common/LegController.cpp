@@ -67,7 +67,7 @@ void LegController::updateCommand(LowlevelCmd* cmd){
         Vec5<double> legtau = data[i].J_force_moment.transpose() * footForce; // force moment from stance leg
 
         std::cout << "leg:" << i << " tau: " << legtau[0] << " " << legtau[1] << " " << legtau[2] << " " << legtau[3] << " " << legtau[4] << std::endl;
-        // outputfile << "leg:" << i << " tau: " << legtau[0] << " " << legtau[1] << " " << legtau[2] << " " << legtau[3] << " " << legtau[4] << std::endl;
+        outputfile << "leg:" << i << " tau: " << legtau[0] << " " << legtau[1] << " " << legtau[2] << " " << legtau[3] << " " << legtau[4] << " ";
 
 
         // // cartesian PD control for swing foot
@@ -107,7 +107,7 @@ void LegController::updateCommand(LowlevelCmd* cmd){
         
    
     }
-    //std::cout << "cmd sent" << std::endl;
+    outputfile << std::endl;
    
 }
 

@@ -26,6 +26,7 @@
     <exec_depend>roscpp</exec_depend>
     <exec_depend>std_msgs</exec_depend>
     <depend>unitree_legged_msgs</depend>
+    <depend>westwood_legged_msgs</depend>
     <depend>qpoases</depend>
     <depend>cython</depend>
     <depend>python-numpy</depend>

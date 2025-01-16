@@ -30,8 +30,8 @@ SOFTWARE.
 #include "../messages/LowLevelCmd.h"
 #include "Biped.h"
 
-// #include<iostream>
-// #include<fstream>
+#include<iostream>
+#include<fstream>
 
 /*!
  * Data sent from control algorithm to legs
@@ -83,7 +83,7 @@ SOFTWARE.
                 data[i].zero();
             }
 
-            // outputfile.open("tau_data.txt");
+            outputfile.open("tau_data.txt");
         };
         
         void zeroCommand();
@@ -99,7 +99,7 @@ SOFTWARE.
         std::string Side[2] = {"Left ", "Right"};        
         Biped& _biped;
 
-        // std::ofstream outputfile;
+        std::ofstream outputfile;
     };
 
     void computeLegJacobianAndPosition(Biped& _biped, Vec5<double>& q, Mat65<double>* J_f_m, Mat35<double>* J_f, Vec3<double>* p, int leg);

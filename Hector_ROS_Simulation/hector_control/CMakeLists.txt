@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
     tf
     geometry_msgs
     unitree_legged_msgs  
+    westwood_legged_msgs
 )
 find_package(gazebo REQUIRED)
 find_package(Boost REQUIRED)
@@ -26,6 +27,7 @@ find_package(Boost REQUIRED)
 catkin_package(
     CATKIN_DEPENDS 
     unitree_legged_msgs 
+    westwood_legged_msgs
 )
 
 include_directories(
