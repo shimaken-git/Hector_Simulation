@@ -44,7 +44,7 @@ private:
   Array2d _durationsPhase;    // durations in phase (0 to 1)
   int _iteration;
   int _nIterations;
-  int currentIteration;
+  // int currentIteration;   使ってない
   double _phase;
 
 };

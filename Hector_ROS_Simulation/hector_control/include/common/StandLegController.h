@@ -1,6 +1,6 @@
-#ifndef SWINGLEGCONTROLLER_H
-#define SWINGLEGCONTROLLER_H
-#include "../../ConvexMPC/GaitGenerator.h"
+#ifndef STANDLEGCONTROLLER_H
+#define STANDLEGCONTROLLER_H
+// #include "../../ConvexMPC/GaitGenerator.h"
 #include "../../include/common/ControlFSMData.h"
 #include "../../include/common/FootSwingTrajectory.h"
 #include "../../include/common/cppTypes.h"
@@ -13,31 +13,30 @@
   * @note varibles with _w are in world frame
   * @note varibles with _b are in body frame
  */
-class swingLegController : public LegIk {
+class standLegController : public LegIk {
     public:
         static constexpr int nLegs = 2;
     
-        swingLegController() = default;
-        ~swingLegController() = default;
+        standLegController() = default;
+        ~standLegController() = default;
 
-        swingLegController(ControlFSMData *data, Gait* gait, double dtSwing);
+        standLegController(ControlFSMData *data, double dtSwing);
 
         /**
          * @brief Initialize the swing leg controller
          * @param data: pointer to the control data
-         * @param gait: pointer to the gait generator
          * @param dtSwing: time step for the swing leg controller
          * @note This function is an alternative to the constructor in case 
          *       the gait generator and control data are not available at 
          *       the time of construction
         */
-        void initSwingLegController(ControlFSMData *data, Gait* gait, double dtSwing);
+        void initStandLegController(ControlFSMData *data, double dtSwing);
         
         /**
          * @brief Update the swing leg controller
          * @note This function should be called at every control loop iteration
          */
-        void updateSwingLeg();
+        void updateStandLeg();
         
         /**
          * @brief Compute an approximate inverse kinematics for 5-DoF swing leg
@@ -50,54 +49,28 @@ class swingLegController : public LegIk {
         
 
     private:
-        Gait* gait;
         const ControlFSMData* data;
         StateEstimate seResult;
         double _dtSwing;
-        FootSwingTrajectory<double> footSwingTrajectory[nLegs];
         Vec3<double> pFoot_w[nLegs];
-        Vec3<double> vFoot_w[nLegs]; 
         Vec3<double> pFoot_b[nLegs];
         Vec3<double> vFoot_b[nLegs];                        
-        Vec2<double> swingStates;
-        Vec2<double> contactStates;
-        Vec2<double> swingTimes;
         Vec5<double> qDes[nLegs];  
-        // Vec3<double> L_hipYawLocation;
-        // Vec3<double> L_hipRollLocation;
-        // Vec3<double> R_hipYawLocation;
-        // Vec3<double> R_hipRollLocation;
         bool firstSwing[nLegs] = {true, true};        
         
         
         void updateFootPosition();
-        void updateSwingStates();
-        void updateSwingTimes();
         void computeFootPlacement();
         void computeFootDesiredPosition();
         void setDesiredJointState();
+    public:
+        void updateState();
 
 
 
         // constants can be adjusted if needed
         const double _dt = 0.001;
-#ifdef _HECTOR_
-        const double footHeight = 0.15;        //足上げ高さ
-#else
-#ifdef _LAMBDA_
-        const double footHeight = 0.15;        //足上げ高さ
-#else
-#ifdef _LAMBDA_R2_
-        const double footHeight = 0.15;        //足上げ高さ
-#endif
-#endif
-#endif
 
-        // // utility functions
-        // double clamp(double val, double minVal, double maxVal) {
-        //         return std::max(minVal, std::min(val, maxVal));
-        // }                            
+}; // class standLegController
 
-}; // class swingLegController
-
-#endif // SWINGLEGCONTROLLER_H    
+#endif // STANDLEGCONTROLLER_H    

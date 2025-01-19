@@ -4,6 +4,7 @@
 #include "FSMState.h"
 #include "FSMState_Passive.h"
 #include "FSMState_Walking.h"
+#include "FSMState_Standing.h"
 #include "FSMState_TO.h"
 #include "../common/enumClass.h"
 
@@ -11,6 +12,7 @@ struct FSMStateList{
     FSMState *invalid;
     FSMState_Passive *passive;
     FSMState_Walking *walking;
+    FSMState_Standing *standing;
     FSMState_TO *TO;
 
    
@@ -18,6 +20,7 @@ struct FSMStateList{
         delete invalid;
         delete passive;
         delete walking;
+        delete standing;
         delete TO;
     }  
 };

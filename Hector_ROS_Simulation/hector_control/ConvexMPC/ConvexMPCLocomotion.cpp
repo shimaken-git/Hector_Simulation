@@ -52,6 +52,8 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
   auto &seResult = data._stateEstimator->getResult();
   auto &stateCommand = data._desiredStateCommand;
 
+
+  std::cout << "gaitNumber:" << gaitNumber << std::endl;
   // pick gait
   Gait *gait = &standing;
   if (gaitNumber == 1)
@@ -124,7 +126,7 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
 
     for (int i = 0; i < 2; i++)
     {
-      footSwingTrajectories[i].setHeight(0.1);                        //足上げ高さ？？？（変えても変わらない）
+      footSwingTrajectories[i].setHeight(0.1);                        //足上げ高さ
       footSwingTrajectories[i].setInitialPosition(pFoot[i]);
       footSwingTrajectories[i].setFinalPosition(pFoot[i]);
     }

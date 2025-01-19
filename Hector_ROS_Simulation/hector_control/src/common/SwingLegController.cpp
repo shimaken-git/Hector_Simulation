@@ -7,20 +7,7 @@
 
 swingLegController::swingLegController(ControlFSMData *data, Gait* gait, double dtSwing){
     std::cout << "swingLegController construct start." << std::endl;
-    this->data = data;
-    this->gait = gait;
-    _dtSwing = dtSwing;
-    L_hipYawLocation = data->_biped->getHipYawLocation(0);
-    L_hipRollLocation = data->_biped->getHipRollLocation(0);
-    R_hipYawLocation = data->_biped->getHipYawLocation(1);
-    R_hipRollLocation = data->_biped->getHipRollLocation(1);
-    updateFootPosition();
-    
-    for(int i = 0; i < nLegs; i++){
-      footSwingTrajectory[i].setHeight(0.0);
-      footSwingTrajectory[i].setInitialPosition(pFoot_w[i]);
-      footSwingTrajectory[i].setFinalPosition(pFoot_w[i]);
-    }
+    initSwingLegController(data, gait, dtSwing);
     std::cout << "swingLegController construct end." << std::endl;
 }
 
@@ -108,7 +95,6 @@ void swingLegController::computeFootPlacement(){
 
     //swingLegの着地位置の計算
     for(int foot = 0; foot < nLegs; foot++){
-        // if(swingStates[foot] > 0){
 
             //希望胴体速度
             v_des_world = seResult.rBody.transpose() * v_des_robot; 
@@ -170,7 +156,6 @@ void swingLegController::computeFootPlacement(){
 void swingLegController::computeFootDesiredPosition(){
     for(int foot = 0; foot < nLegs; foot++){
         if(swingStates[foot] > 0){
-            // if (firstSwing[foot]){
             if (firstSwing[foot] && swingStates[foot] < 1.0){     // <----- swingStates[foot]==1の時はスルー 
                 std::cout << "firstSwing[" << foot << "] " << firstSwing[foot] << std::endl;
                 firstSwing[foot] = false;
@@ -200,78 +185,12 @@ void swingLegController::computeFootDesiredPosition(){
 /******************************************************************************************************/
 
 
-void swingLegController::computeIK(const Vec3<double> &bodyPositionDesired, Eigen::Matrix<double, 5, 1> &jointAngles, int leg){          
-
-        //////hector
-        // double l1 = 0.06;
-        // double l2 = 0.0135;
-        // double l3 = 0.015;
-        // double l4 = 0.018;
-        // double l5 = 0.22;
-        // double l6 = 0.22;
-        // double l7 = 0.04;
-        // double l8 = 0.015;
-
-        Vec3<double> pFoot_des_b = bodyPositionDesired;
-        double side = (leg == 0) ? -1.0 /*Left foot in swing*/ : 1.0 /*Right foot in swing*/;
-
-#if defined(_HECTOR_)
-        Eigen::Vector3d hip_roll(L_hipRollLocation[0]-0.06, 0.0, L_hipYawLocation[2]+L_hipRollLocation[2]-0.07);  // -0.06 = thigh_offset_x
-                                                                                                                  // -0.07 足の高さ分かな？
-        Eigen::Vector3d foot_des_to_hip_roll = pFoot_des_b - hip_roll; //in hip roll frame
-        double distance_3D = foot_des_to_hip_roll.norm();
-        double distance_2D_yOz = std::sqrt(std::pow(foot_des_to_hip_roll[1], 2) + std::pow(foot_des_to_hip_roll[2], 2));
-        // double distance_horizontal = 0.0205;
-        double distance_horizontal = 0.018;
-        double distance_vertical = std::sqrt(std::max(0.00001, std::pow(distance_2D_yOz, 2) - std::pow(distance_horizontal, 2)));        // double distance_vertical = std::sqrt(std::pow(distance_2D_yOz, 2) - std::pow(distance_horizontal, 2));
-        double distance_2D_xOz = pow(( pow(distance_3D,2.0)-pow(distance_horizontal,2.0)), 0.5);
-                       
-        // Ensure arguments are within valid range for acos and asin
-        double acosArg1 = clamp(distance_2D_xOz / (2.0 * 0.22), -1.0, 1.0);
-        double acosArg2 = clamp(distance_vertical / distance_2D_xOz, -1.0, 1.0);
-        double divisor = std::abs(foot_des_to_hip_roll[0]);
-        divisor = (divisor == 0.0) ? 1e-6 : divisor; // Prevent division by zero
-
-        // Joint angle calculations
-        jointAngles[0] = 0.0; 
-        jointAngles[1] = std::asin(clamp(foot_des_to_hip_roll[1] / distance_2D_yOz, -1.0, 1.0)) + std::asin(clamp(distance_horizontal * side / distance_2D_yOz, -1.0, 1.0));        
-        jointAngles[2] = std::acos(acosArg1) - std::acos(acosArg2) * (foot_des_to_hip_roll[0]) / divisor;
-        jointAngles[3] = 2.0 * std::asin(clamp(distance_2D_xOz / 2.0 / 0.22, -1.0, 1.0)) - M_PI;
-        jointAngles[4] = -data->_legController->data[leg].q(3)-data->_legController->data[leg].q(2); // q3 - q2        
-#else
-#if defined(_LAMBDA_) || defined(_LAMBDA_R2_)
-        double l = 0.153;
-        Eigen::Vector3d hip_roll(L_hipRollLocation[0], 0.0, L_hipYawLocation[2]+L_hipRollLocation[2]-0.03);
-                                                                                                                  // -0.03 足の高さ分かな？
-        Eigen::Vector3d foot_des_to_hip_roll = pFoot_des_b - hip_roll; //in hip roll frame
-        double distance_3D = foot_des_to_hip_roll.norm();
-        double distance_2D_yOz = std::sqrt(std::pow(foot_des_to_hip_roll[1], 2) + std::pow(foot_des_to_hip_roll[2], 2));
-        // double distance_horizontal = 0.018;
-        double distance_vertical = distance_2D_yOz;
-        double distance_2D_xOz = distance_3D;
-                       
-        // Ensure arguments are within valid range for acos and asin
-        double acosArg1 = clamp(distance_2D_xOz / (2.0 * l), -1.0, 1.0);
-        double acosArg2 = clamp(distance_vertical / distance_2D_xOz, -1.0, 1.0);
-        double divisor = std::abs(foot_des_to_hip_roll[0]);
-        divisor = (divisor == 0.0) ? 1e-6 : divisor; // Prevent division by zero
-
-        // Joint angle calculations
-        jointAngles[0] = 0.0; 
-        jointAngles[1] = std::asin(clamp(foot_des_to_hip_roll[1] / distance_2D_yOz, -1.0, 1.0));
-        jointAngles[2] = std::acos(acosArg1) - std::acos(acosArg2) * (foot_des_to_hip_roll[0]) / divisor;
-        jointAngles[3] = 2.0 * std::asin(clamp(distance_2D_xOz / 2.0 / l, -1.0, 1.0)) - M_PI;
-        jointAngles[4] = -data->_legController->data[leg].q(3)-data->_legController->data[leg].q(2) - ori::rotationMatrixToRPY(seResult.rBody)[1]; // q3 - q2
-#endif
-#endif
-        //Joint angles offset correction
-        // jointAngles[2] -= 0.3*M_PI;
-        // jointAngles[3] += 0.6*M_PI;
-        // jointAngles[4] -= 0.3*M_PI;
-        jointAngles[2] -= 0.05*M_PI;
-        jointAngles[3] += 0.1*M_PI;
-        jointAngles[4] -= 0.05*M_PI;
-        // std::cout << "ik " << jointAngles << std::endl;
+void swingLegController::computeIK(const Vec3<double> &bodyPositionDesired, Eigen::Matrix<double, 5, 1> &jointAngles, int leg){
+    computeIK_(bodyPositionDesired, jointAngles, leg);
+    jointAngles[4] = -data->_legController->data[leg].q(3)-data->_legController->data[leg].q(2) - ori::rotationMatrixToRPY(seResult.rBody)[1]; // q3 - q2
+    jointAngles[2] -= 0.05*M_PI;
+    jointAngles[3] += 0.1*M_PI;
+    jointAngles[4] -= 0.02*M_PI;
 }
 
 /******************************************************************************************************/

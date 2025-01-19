@@ -30,6 +30,7 @@ void FSMState_Walking::enter()
 
 void FSMState_Walking::run()
 {
+    std::cout << "FSMState_Walking::run()" << std::endl;
     std::cout << "contact " << _data->_interface->contact[0] << " " << _data->_interface->contact[1] << " " << _data->_interface->contact[2] << " " << _data->_interface->contact[3] << std::endl;
 
     _data->_legController->updateData(_data->_lowState);
@@ -177,14 +178,19 @@ void FSMState_Walking::run()
 
 void FSMState_Walking::exit()
 {      
+    std::cout << "FSMState_Walking::exit()" << std::endl;
     counter = 0; 
     _data->_interface->zeroCmdPanel();
 }
 
 FSMStateName FSMState_Walking::checkTransition()
 {
+    std::cout << "FSMState_Walking::checkTransition()" << std::endl;
     if(_lowState->userCmd == UserCommand::L2_B){
         return FSMStateName::PASSIVE;
+    }
+    else if(_lowState->userCmd == UserCommand::L1_A){
+        return FSMStateName::PDSTAND;
     }
     else{
         return FSMStateName::WALKING;
