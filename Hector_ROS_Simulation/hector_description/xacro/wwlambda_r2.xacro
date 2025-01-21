@@ -554,6 +554,12 @@
     <xacro:bumper side="R" front="F" parent="R_toe" />
     <xacro:bumper side="R" front="B" parent="R_toe" />
 
+    <gazebo>
+        <plugin filename="libgazebo_ros_force.so" name="gazebo_ros_force">
+            <bodyName>body</bodyName>
+            <topicName>box_force</topicName>
+        </plugin>
+    </gazebo>
 
 
     <!-- <xacro:stairs stairs="15" xpos="0" ypos="2.0" zpos="0" /> -->

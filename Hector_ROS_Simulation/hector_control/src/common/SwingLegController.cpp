@@ -52,7 +52,7 @@ void swingLegController::updateSwingLeg(){
 
 void swingLegController::updateFootPosition(){
 
-    for(int i = 0; i < nLegs; i++){    
+    for(int i = 0; i < nLegs; i++){
         pFoot_w[i] =  seResult.position + seResult.rBody.transpose() * ( data->_biped->getHipYawLocation(i) + data->_legController->data[i].p); 
     }
 
@@ -174,6 +174,7 @@ void swingLegController::computeFootDesiredPosition(){
             // Eigen::Vector3d hipWidthOffSet = {-0.015, side*-0.057, 0.0}; // TODO: sync with Biped.h
             Eigen::Vector3d hipWidthOffSet = data->_biped->getHipYawLocation(foot);
             hipWidthOffSet(2) = 0.0;
+            pDesFootWorld[2] -=0.03;
             pFoot_b[foot] = seResult.rBody * (pDesFootWorld - seResult.position) - hipWidthOffSet ;  //原点を股関節に変換
             // vFoot_b[foot] = seResult.rBody * (vDesFootWorld*0 - seResult.vWorld);             
             vFoot_b[foot] = seResult.rBody * (vDesFootWorld - seResult.vWorld);             
@@ -188,9 +189,9 @@ void swingLegController::computeFootDesiredPosition(){
 void swingLegController::computeIK(const Vec3<double> &bodyPositionDesired, Eigen::Matrix<double, 5, 1> &jointAngles, int leg){
     computeIK_(bodyPositionDesired, jointAngles, leg);
     jointAngles[4] = -data->_legController->data[leg].q(3)-data->_legController->data[leg].q(2) - ori::rotationMatrixToRPY(seResult.rBody)[1]; // q3 - q2
-    jointAngles[2] -= 0.05*M_PI;
-    jointAngles[3] += 0.1*M_PI;
-    jointAngles[4] -= 0.02*M_PI;
+    // jointAngles[2] -= 0.05*M_PI;
+    // jointAngles[3] += 0.1*M_PI;
+    // jointAngles[4] -= 0.02*M_PI;
 }
 
 /******************************************************************************************************/

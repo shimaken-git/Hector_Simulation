@@ -4,6 +4,9 @@ FSMState_Walking::FSMState_Walking(ControlFSMData *data)
                  :FSMState(data, FSMStateName::WALKING, "walking"),
                   Cmpc(0.001, 40, data->_biped->height, data->_biped->mass) {
                     std::cout << "FSMState_Walking construct end." << std::endl;
+                    //⇓この2つではダメ
+                    _data->_desiredStateCommand->firstRun = true;
+                    _data->_stateEstimator->init_p_world();
                   }
 
 template<typename T0, typename T1, typename T2>
@@ -19,12 +22,12 @@ void FSMState_Walking::enter()
     roll = 0;
      _data->_interface->zeroCmdPanel();
     counter = 0;
-    _data->_desiredStateCommand->firstRun = true;
+    // _data->_desiredStateCommand->firstRun = true;
     _data->_stateEstimator->run(); 
     _data->_legController->zeroCommand();
     Cmpc.firstRun = true;
 
-    _data->_stateEstimator->init_p_world();
+    // _data->_stateEstimator->init_p_world();
     _data->_stateEstimator->set_firstStage(true);
 }
 
