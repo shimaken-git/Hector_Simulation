@@ -106,9 +106,12 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
     vBody_des[1] = v_des_world[1];
     vBody_des[2] = 0;
 
-    pBody_RPY_des[0] = 0;
-    pBody_RPY_des[1] = 0;
-    pBody_RPY_des[2] = 0; // seResult.rpy[2];
+    if(!restart){
+      pBody_RPY_des[0] = 0;
+      pBody_RPY_des[1] = 0;
+      pBody_RPY_des[2] = 0; // seResult.rpy[2];
+      restart = true;
+    }
 
     vBody_Ori_des[0] = 0;
     vBody_Ori_des[1] = 0;

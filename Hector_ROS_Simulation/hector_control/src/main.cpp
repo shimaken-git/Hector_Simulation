@@ -41,7 +41,11 @@ int main(int argc, char ** argv)
     Biped biped;
     // biped.setBiped();
 
+#ifdef BEAR_REAL
     ioInter = new CheatIO(robot_name, biped.height);
+#else
+    ioInter = new CheatIO(robot_name, biped.height);
+#endif
     ros::Rate rate(1000);
 
     LegController* legController = new LegController(biped);

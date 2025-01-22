@@ -43,6 +43,7 @@ public:
     void run(ControlFSMData& data);
     void setGaitNum(int gaitNum) { gaitNumber = gaitNum; }
     bool firstRun = true;
+    bool restart = false;
 
 
 private:
