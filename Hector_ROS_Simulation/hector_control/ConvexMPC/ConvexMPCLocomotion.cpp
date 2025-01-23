@@ -106,12 +106,9 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
     vBody_des[1] = v_des_world[1];
     vBody_des[2] = 0;
 
-    if(!restart){
-      pBody_RPY_des[0] = 0;
-      pBody_RPY_des[1] = 0;
-      pBody_RPY_des[2] = 0; // seResult.rpy[2];
-      restart = true;
-    }
+    pBody_RPY_des[0] = 0;
+    pBody_RPY_des[1] = 0;
+    pBody_RPY_des[2] = 0; // seResult.rpy[2];
 
     vBody_Ori_des[0] = 0;
     vBody_Ori_des[1] = 0;
@@ -303,18 +300,19 @@ void ConvexMPCLocomotion::updateMPCIfNeeded(int *mpcTable, ControlFSMData &data,
     // Vec3<double> ori_des_world;
     ori_des_world << stateCommand->data.stateDes[3], stateCommand->data.stateDes[4], stateCommand->data.stateDes[5];    
 
-    double trajInitial[12] = {/*rpy_comp[0] + */stateCommand->data.stateDes[3],    // 0
-                              /*rpy_comp[1] + */stateCommand->data.stateDes[4],    // 1
-                              0.0,    // 2
-                              xStart,                                   // 3
-                              yStart,                                   // 4
-                              height,   // 5
-                              0,                                        // 6
-                              0,                                        // 7
-                              stateCommand->data.stateDes[11],          // 8
-                              v_des_world[0],                           // 9
-                              v_des_world[1],                           // 10
-                              0};                                       // 11
+    double trajInitial[12] = {/*rpy_comp[0] + */stateCommand->data.stateDes[3],    // 0   roll
+                              /*rpy_comp[1] + */stateCommand->data.stateDes[4],    // 1   pitch
+                              // 0.0,                                                 // 2   yaw
+                              yaw,                                                 // 2   yaw     Cf.1
+                              xStart,                                   // 3   x
+                              yStart,                                   // 4   y
+                              height,                                   // 5   z
+                              0,                                        // 6   wx
+                              0,                                        // 7   wy
+                              stateCommand->data.stateDes[11],          // 8   wz
+                              v_des_world[0],                           // 9   vel_x
+                              v_des_world[1],                           // 10  vel_y
+                              0};                                       // 11  vel_z
 
     for (int i = 0; i < horizonLength; i++)
     {
@@ -332,31 +330,27 @@ void ConvexMPCLocomotion::updateMPCIfNeeded(int *mpcTable, ControlFSMData &data,
       }
       else
       {
-        if (v_des_world[0] == 0) {
-        trajAll[12*i + 3] = trajInitial[3] + i * dtMPC * v_des_world[0];
+        if(v_des_world[0] == 0){
+          trajAll[12*i + 3] = trajInitial[3] + i * dtMPC * v_des_world[0];
+        }else{
+          trajAll[12*i + 3] = seResult.position[0] + i * dtMPC * v_des_world[0]; 
         }
-        else{
-         trajAll[12*i + 3] = seResult.position[0] + i * dtMPC * v_des_world[0]; 
+        if(v_des_world[1] == 0){
+          trajAll[12*i + 4] = trajInitial[4] + i * dtMPC * v_des_world[1];
+        }else{
+          trajAll[12*i + 4] = seResult.position[1] + i * dtMPC * v_des_world[1]; 
         }
-        if (v_des_world[1] == 0) {
-        trajAll[12*i + 4] = trajInitial[4] + i * dtMPC * v_des_world[1];
-        }
-        else{
-         trajAll[12*i + 4] = seResult.position[1] + i * dtMPC * v_des_world[1]; 
-        }
-        if (stateCommand->data.stateDes[11] == 0){
-        trajAll[12*i + 2] = trajInitial[2];
-         }
-        else{
-        trajAll[12*i + 2] = yaw + i * dtMPC * stateCommand->data.stateDes[11];
+        if(stateCommand->data.stateDes[11] == 0){
+          trajAll[12*i + 2] = trajInitial[2];
+        }else{
+          trajAll[12*i + 2] = yaw + i * dtMPC * stateCommand->data.stateDes[11];
         //std::cout << "yaw traj" <<  trajAll[12*i + 2] << std::endl;
         }
       }
-      // std::cout << "traj " << i << std::endl;
-      // for (int j = 0; j < 12; j++) {
-      //   std::cout << trajAll[12 * i + j] << "  ";
-      // }
-      //     std::cout<< " " <<std::endl;
+      //trajAll[]とstateCommand->data.stateDes[]ではデータ順が違うらしい。
+      //stateDes[]では6～8が[m/s] 9～11が[rad/s]のようだ。
+      // Cf.1
+      // trajInitial[2]が0.0だと、stateDes[11]==0の時に0.0がセットされてしまうのでまずい。
 
     }
 

@@ -42,7 +42,7 @@ int main(int argc, char ** argv)
     // biped.setBiped();
 
 #ifdef BEAR_REAL
-    ioInter = new CheatIO(robot_name, biped.height);
+    ioInter = new BearIO(robot_name, biped.height);
 #else
     ioInter = new CheatIO(robot_name, biped.height);
 #endif

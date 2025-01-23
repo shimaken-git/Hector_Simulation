@@ -27,12 +27,9 @@ void DesiredStateCommand::setStateCommands(double r, double p, Vec3<double> v_de
     if(data.stateDes(5) > 3.1 && stateEstimate->rpy(2) < 0){
       data.stateDes(5) = stateEstimate->rpy(2);
     }
-
-
      if(data.stateDes(5)  < -3.1 && stateEstimate->rpy(2) > 0){
       data.stateDes(5) = stateEstimate->rpy(2);
     }
-
     data.pre_stateDes(5) = data.stateDes(5);
 
      // Roll
