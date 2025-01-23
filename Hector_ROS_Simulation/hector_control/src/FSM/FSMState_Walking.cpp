@@ -31,14 +31,49 @@ void FSMState_Walking::enter()
 void FSMState_Walking::run()
 {
     std::cout << "FSMState_Walking::run()" << std::endl;
-    std::cout << "contact " << _data->_interface->contact[0] << " " << _data->_interface->contact[1] << " " << _data->_interface->contact[2] << " " << _data->_interface->contact[3] << std::endl;
 
     _data->_legController->updateData(_data->_lowState);
     _data->_stateEstimator->run(); 
     _userValue = _data->_lowState->userValue;
+    tipRun();
 
-    const StateEstimate result = _data->_stateEstimator->getResult();
+
+    v_des_body[0] = (double)invNormalize(_userValue.ly, -0.75, 0.75);
+    v_des_body[1] = (double)invNormalize(_userValue.rx, -0.25, 0.25);
+    turn_rate = (double)invNormalize(_userValue.lx, -1.5, 1.5);
+    _data->_desiredStateCommand->setStateCommands(roll, pitch, v_des_body, turn_rate);
+    
+    Cmpc.setGaitNum(2); // 2 for walking
+    Cmpc.run(*_data);
+
+    _data->_legController->updateCommand(_data->_lowCmd);  
+}
+
+void FSMState_Walking::exit()
+{      
+    std::cout << "FSMState_Walking::exit()" << std::endl;
+    counter = 0; 
+    _data->_interface->zeroCmdPanel();
+}
+
+FSMStateName FSMState_Walking::checkTransition()
+{
+    std::cout << "FSMState_Walking::checkTransition()" << std::endl;
+    if(_lowState->userCmd == UserCommand::L2_B){
+        return FSMStateName::PASSIVE;
+    }
+    else if(_lowState->userCmd == UserCommand::L1_A){
+        return FSMStateName::PDSTAND;
+    }
+    else{
+        return FSMStateName::WALKING;
+    }
+}
+
+void FSMState_Walking::tipRun()
+{
     const StateEstimate *_result = _data->_stateEstimator->getResult_();
+    std::cout << "contact " << _data->_interface->contact[0] << " " << _data->_interface->contact[1] << " " << _data->_interface->contact[2] << " " << _data->_interface->contact[3] << std::endl;
     // if(!(_data->_interface->contact[0] || _data->_interface->contact[1] || _data->_interface->contact[2] || _data->_interface->contact[3])){
     //     //すべてのtipがfloatingなら
     //     if(!result.firstStage){    //ファーストステージではないなら
@@ -101,7 +136,7 @@ void FSMState_Walking::run()
     }
     if(floating_check){
         //すべてのtipが浮いていたら
-        if(!result.firstStage){
+        if(!_result->firstStage){
             std::cout << "!!!!!!!!!!!!!!!!! All Tip Floating !!!!!!!!!!!!!!!!" << std::endl;
         }
     }else{
@@ -149,50 +184,8 @@ void FSMState_Walking::run()
     //firstStage==falseかつすべてのtipがcontact[]==falseの場合、最もfloatingTimeが小さいtipのrtipを使ってp_worldを決める。
     //p_worldにはv_world*floatingTimeを加える
 
-    // std::cout << "position " << _data->_stateEstimator->getResult().position << std::endl;
-    // std::cout << "vBody    " << _data->_stateEstimator->getResult().vBody << std::endl;
-    // std::cout << "p_world  " << _data->_stateEstimator->getResult().p_world << std::endl;
-    // std::cout << "Cmpc.firstRun " << Cmpc.firstRun << std::endl;
+    // for(int idx = 0; idx < 4; idx++){
+    //     std::cout << "tipPrint[" << idx << "] " << _data->_stateEstimator->getResult().tipPrint[idx] << std::endl;
+    // }
 
-    // std::cout << "rBody " << _data->_stateEstimator->getResult().rBody << std::endl;
-
-    // std::cout << "tip 0 " << _data->_legController->data[0].tip[0] << std::endl;
-    // std::cout << "tip 0 " << _data->_legController->data[0].tip[1] << std::endl;
-    // std::cout << "tip 1 " << _data->_legController->data[1].tip[0] << std::endl;
-    // std::cout << "tip 1 " << _data->_legController->data[1].tip[1] << std::endl;
-
-    for(int idx = 0; idx < 4; idx++){
-        std::cout << "tipPrint[" << idx << "] " << _data->_stateEstimator->getResult().tipPrint[idx] << std::endl;
-    }
-
-    v_des_body[0] = (double)invNormalize(_userValue.ly, -0.75, 0.75);
-    v_des_body[1] = (double)invNormalize(_userValue.rx, -0.25, 0.25);
-    turn_rate = (double)invNormalize(_userValue.lx, -1.5, 1.5);
-    _data->_desiredStateCommand->setStateCommands(roll, pitch, v_des_body, turn_rate);
-    
-    Cmpc.setGaitNum(2); // 2 for walking
-    Cmpc.run(*_data);
-
-    _data->_legController->updateCommand(_data->_lowCmd);  
-}
-
-void FSMState_Walking::exit()
-{      
-    std::cout << "FSMState_Walking::exit()" << std::endl;
-    counter = 0; 
-    _data->_interface->zeroCmdPanel();
-}
-
-FSMStateName FSMState_Walking::checkTransition()
-{
-    std::cout << "FSMState_Walking::checkTransition()" << std::endl;
-    if(_lowState->userCmd == UserCommand::L2_B){
-        return FSMStateName::PASSIVE;
-    }
-    else if(_lowState->userCmd == UserCommand::L1_A){
-        return FSMStateName::PDSTAND;
-    }
-    else{
-        return FSMStateName::WALKING;
-    }
 }

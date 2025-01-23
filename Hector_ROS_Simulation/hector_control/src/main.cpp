@@ -11,6 +11,8 @@
 #include "../include/interface/CheatIO.h"
 #include "../include/FSM/FSM.h"
 
+#include <geometry_msgs/Vector3.h>
+
 bool running = true;
 
 void ShutDown(int sig)
@@ -31,8 +33,12 @@ void runFSMController(FSM* _FSMController)
 
 int main(int argc, char ** argv)
 {
+    ros::Publisher wpos_pub, gpos_pub;
     IOInterface *ioInter;
     ros::init(argc, argv, "hector_control", ros::init_options::AnonymousName);
+    ros::NodeHandle nh;
+    wpos_pub = nh.advertise<geometry_msgs::Vector3>("/wpos", 1);
+    gpos_pub = nh.advertise<geometry_msgs::Vector3>("/gpos", 1);
     
     std::string robot_name = "hector";
     std::cout << "robot name " << robot_name << std::endl;
@@ -83,9 +89,19 @@ int main(int argc, char ** argv)
 
     signal(SIGINT, ShutDown);
     
+    geometry_msgs::Vector3 wpos, gpos;
     while(running)
     {
         ioInter->sendRecv(cmd, state);
+        auto result = _controlData->_stateEstimator->getResult();
+        wpos.x = result.position[0];
+        wpos.y = result.position[1];
+        wpos.z = result.position[2];
+        gpos.x = result.p_world[0];
+        gpos.y = result.p_world[1];
+        gpos.z = result.p_world[2];
+        wpos_pub.publish(wpos);
+        gpos_pub.publish(gpos);
         rate.sleep();
     }
     

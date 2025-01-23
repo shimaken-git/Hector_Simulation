@@ -125,6 +125,7 @@ class StateEstimatorContainer {
         for (auto estimator : _estimators){
             estimator->run();
         }
+        // tipRun();
     }
 
     // get result

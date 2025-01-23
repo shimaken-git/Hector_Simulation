@@ -34,7 +34,6 @@ void FSM::run()
     std::cout << "FSM::run()" << std::endl;
 
     std::cout << "======== currentState Name " << _currentState->_stateNameStr << std::endl;
-    std::cout << "contact " << _data->_interface->contact[0] << " " << _data->_interface->contact[1] << " " << _data->_interface->contact[2] << " " << _data->_interface->contact[3] << std::endl;
 
     if(!checkSafty())
     {
