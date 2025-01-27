@@ -72,7 +72,7 @@ int main(int argc, char **argv)
   spinner.start();
   ros::Time last_time = ros::Time::now();
   ros::TimerOptions timer_options(
-    ros::Duration(0.010), // 10ms
+    ros::Duration(0.001), // 1ms
     boost::bind(timerCallback, boost::ref(hardware_interface), boost::ref(cm), boost::ref(last_time)),
     &queue);
   ros::Timer timer = node_handle.createTimer(timer_options);

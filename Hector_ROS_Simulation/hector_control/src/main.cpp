@@ -55,7 +55,7 @@ int main(int argc, char ** argv)
     // biped.setBiped();
 
 #ifdef BEAR_REAL
-    std::string robot_name = "lambad_leg";
+    std::string robot_name = "lambda_leg";
     ioInter = new BearIO(robot_name, biped.height);
 #else
     std::string robot_name = "hector";

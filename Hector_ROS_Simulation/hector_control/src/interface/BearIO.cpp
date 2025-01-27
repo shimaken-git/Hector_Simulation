@@ -128,11 +128,12 @@ void BearIO::StateCallback(const sensor_msgs::Imu & msg)
     _highState.imu.gyroscope[0] = msg.linear_acceleration.x;
     _highState.imu.gyroscope[1] = msg.linear_acceleration.y;
     _highState.imu.gyroscope[2] = msg.linear_acceleration.z;
-    ROS_INFO("state callback %f %f %f %f", msg.orientation.w, msg.orientation.x, msg.orientation.y, msg.orientation.z);
+    // ROS_INFO("state callback %f %f %f %f", msg.orientation.w, msg.orientation.x, msg.orientation.y, msg.orientation.z);
 }
 
 void BearIO::LhipCallback(const westwood_legged_msgs::MotorState& msg)
 {
+    ROS_INFO("LhipCallback %f", msg.q);
     _highState.motorState[0].mode = msg.mode;
     _highState.motorState[0].q = msg.q;
     _highState.motorState[0].dq = msg.dq;
@@ -141,6 +142,7 @@ void BearIO::LhipCallback(const westwood_legged_msgs::MotorState& msg)
 
 void BearIO::Lhip2Callback(const westwood_legged_msgs::MotorState& msg)
 {
+    ROS_INFO("L2hipCallback %f", msg.q);
     _highState.motorState[1].mode = msg.mode;
     _highState.motorState[1].q = msg.q;
     _highState.motorState[1].dq = msg.dq;
@@ -213,7 +215,7 @@ void BearIO::RtoeCallback(const westwood_legged_msgs::MotorState& msg)
 
 void BearIO::ContactCallback(const std_msgs::UInt8 & msg)
 {
-    ROS_INFO("contact callback %d", msg.data);
+    // ROS_INFO("contact callback %d", msg.data);
     for(int i = 0; i < 4; i++) bfr_contact[i] = contact[i];
     uint8_t b = 0x03;
     for(int i = 0; i < 4; i++){

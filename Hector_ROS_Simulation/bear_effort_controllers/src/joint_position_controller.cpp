@@ -226,7 +226,7 @@ void JointPositionController::update(const ros::Time& time, const ros::Duration&
   lastState.tauEst = joint_.getEffort();
 
   // publish state
-  if (loop_count_ % 10 == 0){
+  if (loop_count_ % 2 == 0){
     if(controller_state_publisher_ && controller_state_publisher_->trylock()){
       controller_state_publisher_->msg_.q = lastState.q;
       controller_state_publisher_->msg_.dq = lastState.dq;

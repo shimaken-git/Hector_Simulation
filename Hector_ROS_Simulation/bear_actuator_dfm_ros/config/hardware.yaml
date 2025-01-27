@@ -73,8 +73,8 @@ robot_joint:
         coeff: 0.5
       - name: joint3
         coeff: 0.5
-    limit_p_angle: 0.0
-    limit_m_angle: -1.5
+    limit_p_angle: 1.5 #0.0
+    limit_m_angle: 0.0 #-1.5
     protection_kd: 0.0
   L_calf_joint:
     joint:
@@ -84,8 +84,8 @@ robot_joint:
         coeff: -0.5
       - name: joint4
         coeff: 1.0
-    limit_p_angle: 1.7
-    limit_m_angle: 0.0
+    limit_p_angle: 0.0 #1.7
+    limit_m_angle: -1.7 #0.0
     protection_kd: 0.0
   L_toe_joint:
     joint:
@@ -116,8 +116,8 @@ robot_joint:
         coeff: -0.5
       - name: joint8
         coeff: -0.5
-    limit_p_angle: 0.0
-    limit_m_angle: -1.5
+    limit_p_angle: 1.5 #0.0
+    limit_m_angle: 0.0 #-1.5
     protection_kd: 0.0
   R_calf_joint:
     joint:
@@ -127,8 +127,8 @@ robot_joint:
         coeff: 0.5
       - name: joint9
         coeff: -1.0
-    limit_p_angle: 1.7
-    limit_m_angle: 0.0
+    limit_p_angle: 0.0 #1.7
+    limit_m_angle: -1.7 #0.0
     protection_kd: 0.0
   R_toe_joint:
     joint:
