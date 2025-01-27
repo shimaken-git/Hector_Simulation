@@ -73,7 +73,14 @@ FSMStateName FSMState_Walking::checkTransition()
 void FSMState_Walking::tipRun()
 {
     const StateEstimate *_result = _data->_stateEstimator->getResult_();
-    std::cout << "contact " << _data->_interface->contact[0] << " " << _data->_interface->contact[1] << " " << _data->_interface->contact[2] << " " << _data->_interface->contact[3] << std::endl;
+    static bool contact[4] = {false, false, false, false};
+    static bool bfr_contact[4] = {false, false, false, false};
+    for(int i = 0; i < 4; i++){
+        bfr_contact[i] = contact[i];    //変化点をfetchできない場合があるのでこれを使う。
+        contact[i] = _data->_interface->contact[i];
+    }
+    std::cout << "    contact " << contact[0] << " " << contact[1] << " " << contact[2] << " " << contact[3] << std::endl;
+    std::cout << "bfr_contact " << bfr_contact[0] << " " << bfr_contact[1] << " " << bfr_contact[2] << " " << bfr_contact[3] << std::endl;
     // if(!(_data->_interface->contact[0] || _data->_interface->contact[1] || _data->_interface->contact[2] || _data->_interface->contact[3])){
     //     //すべてのtipがfloatingなら
     //     if(!result.firstStage){    //ファーストステージではないなら
@@ -100,30 +107,27 @@ void FSMState_Walking::tipRun()
 
     bool floating_check = true;
     bool unsettled[4] = {false,false,false,false};    // tipPrint[]が未確定のtip
+    bool firstStage = _result->firstStage ? true : false;
     Vec3<double> candidate[4] = {Vec3<double>(0, 0, 0),Vec3<double>(0, 0, 0),Vec3<double>(0, 0, 0),Vec3<double>(0, 0, 0)};
     for(int i = 0; i < 4; i++){
-        if(_data->_interface->contact[i]){
+        if(contact[i]){
             floating_check = false;
             if(_result->firstStage){
-                std::cout << _result->firstStage << std::endl;
-                std::cout << "End of First Stage " << i << std::endl;
-                _data->_stateEstimator->set_firstStage(false);
-                std::cout << _result->firstStage << std::endl;
                 //最初のp_world候補と、tipPrint確定
                 _data->_stateEstimator->set_tipPrint(i, Vec3<double>(_result->rtip[i][0], _result->rtip[i][1], 0));
                 candidate[i] = _result->tipPrint[i] - _result->rtip[i];
-                std::cout << "candidate[" << i << "] " << candidate[i] << std::endl;
+                std::cout << "candidate[" << i << "] " << candidate[i][0] << " " << candidate[i][1] << " " << candidate[i][2] << std::endl;
+                firstStage = false;
             }else{
-                if(_data->_interface->bfr_contact[i]){
+                if(bfr_contact[i]){
                     //前回も接地していた
                     //tipPrint[i]の更新なし
                     //p_worldの候補値を作成
                     candidate[i] = _result->tipPrint[i] - _result->rtip[i];
-                    std::cout << "Deciding candidates based on previous results " << i << " " << candidate[i] << std::endl;
+                    std::cout << "Deciding candidates based on previous results " << i << " " << candidate[i][0] << " " << candidate[i][1] << " " << candidate[i][2] << std::endl;
                 }else{
-                    //前回は浮いていた
-                    //tipPrint[i]は未確定
-                    //p_worldが決まったらtipPrint[i]を決める。未確定フラグを立てておく
+                    //前回は浮いていたのでtipPrint[i]は未確定
+                    //p_worldが決まったらtipPrint[i]を確定させる。未確定フラグを立てておく
                     unsettled[i] = true;
                     std::cout << "It was floating last time so it's not confirmed " << i << std::endl;
                 }
@@ -134,6 +138,8 @@ void FSMState_Walking::tipRun()
 
         }
     }
+    if(_result->firstStage && !firstStage) _data->_stateEstimator->set_firstStage(false);
+
     if(floating_check){
         //すべてのtipが浮いていたら
         if(!_result->firstStage){
@@ -144,7 +150,7 @@ void FSMState_Walking::tipRun()
         int n_candidates = 0;
         Vec3<double> acc_candidate(0,0,0);
         for(int i = 0; i < 4; i++){
-            if(!unsettled[i] && _data->_interface->contact[i]){
+            if(!unsettled[i] && contact[i]){
                 n_candidates++;
                 acc_candidate += candidate[i];
             }
@@ -152,7 +158,7 @@ void FSMState_Walking::tipRun()
         std::cout << "n_candidates " << n_candidates << std::endl;
         if(n_candidates != 0){
             _data->_stateEstimator->set_p_world(acc_candidate / n_candidates);
-            std::cout << "Decition p_world" << _result->p_world << std::endl;
+            std::cout << "Decition p_world " << _result->p_world[0] << " " << _result->p_world[1] << " "  << _result->p_world[2] << std::endl;
         }else{
             std::cout << "Cannot be determined because there are no candidates." << std::endl;
         }

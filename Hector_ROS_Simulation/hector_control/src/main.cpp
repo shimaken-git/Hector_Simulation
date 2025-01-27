@@ -5,13 +5,20 @@
 #include <string>
 #include <thread>
 
+// #define BEAR_REAL
+
 #include "../include/common/ControlFSMData.h"
 #include "../include/common/OrientationEstimator.h"
 #include "../include/common/PositionVelocityEstimator.h"
+#ifdef BEAR_REAL
+#include "../include/interface/BearIO.h"
+#else
 #include "../include/interface/CheatIO.h"
+#endif
 #include "../include/FSM/FSM.h"
 
 #include <geometry_msgs/Vector3.h>
+
 
 bool running = true;
 
@@ -33,25 +40,29 @@ void runFSMController(FSM* _FSMController)
 
 int main(int argc, char ** argv)
 {
-    ros::Publisher wpos_pub, gpos_pub;
+    ros::Publisher gpworld_pub, pworld_pub;
+    ros::Publisher gvworld_pub, vworld_pub;
     IOInterface *ioInter;
     ros::init(argc, argv, "hector_control", ros::init_options::AnonymousName);
     ros::NodeHandle nh;
-    wpos_pub = nh.advertise<geometry_msgs::Vector3>("/wpos", 1);
-    gpos_pub = nh.advertise<geometry_msgs::Vector3>("/gpos", 1);
+    gpworld_pub = nh.advertise<geometry_msgs::Vector3>("/gpworld", 1);
+    pworld_pub = nh.advertise<geometry_msgs::Vector3>("/pworld", 1);
+    gvworld_pub = nh.advertise<geometry_msgs::Vector3>("/gvworld", 1);
+    vworld_pub = nh.advertise<geometry_msgs::Vector3>("/vworld", 1);
     
-    std::string robot_name = "hector";
-    std::cout << "robot name " << robot_name << std::endl;
 
     double dt = 0.001;
     Biped biped;
     // biped.setBiped();
 
 #ifdef BEAR_REAL
+    std::string robot_name = "lambad_leg";
     ioInter = new BearIO(robot_name, biped.height);
 #else
+    std::string robot_name = "hector";
     ioInter = new CheatIO(robot_name, biped.height);
 #endif
+    std::cout << "robot name " << robot_name << std::endl;
     ros::Rate rate(1000);
 
     LegController* legController = new LegController(biped);
@@ -89,19 +100,27 @@ int main(int argc, char ** argv)
 
     signal(SIGINT, ShutDown);
     
-    geometry_msgs::Vector3 wpos, gpos;
+    geometry_msgs::Vector3 gpworld, pworld, gvworld, vworld;
     while(running)
     {
         ioInter->sendRecv(cmd, state);
         auto result = _controlData->_stateEstimator->getResult();
-        wpos.x = result.position[0];
-        wpos.y = result.position[1];
-        wpos.z = result.position[2];
-        gpos.x = result.p_world[0];
-        gpos.y = result.p_world[1];
-        gpos.z = result.p_world[2];
-        wpos_pub.publish(wpos);
-        gpos_pub.publish(gpos);
+        gpworld.x = result.position[0];
+        gpworld.y = result.position[1];
+        gpworld.z = result.position[2];
+        pworld.x = result.p_world[0];
+        pworld.y = result.p_world[1];
+        pworld.z = result.p_world[2];
+        gvworld.x = result.vWorld[0];
+        gvworld.y = result.vWorld[1];
+        gvworld.z = result.vWorld[2];
+        vworld.x = result.v_world[0];
+        vworld.y = result.v_world[1];
+        vworld.z = result.v_world[2];
+        gpworld_pub.publish(gpworld);
+        pworld_pub.publish(pworld);
+        gvworld_pub.publish(gvworld);
+        vworld_pub.publish(vworld);
         rate.sleep();
     }
     

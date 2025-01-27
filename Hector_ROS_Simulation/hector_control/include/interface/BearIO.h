@@ -16,6 +16,7 @@
 #include <tf/transform_broadcaster.h>
 #include <string>
 #include <std_msgs/UInt8.h>
+#include <sensor_msgs/Imu.h>
 
 class BearIO : public IOInterface
 {
@@ -41,7 +42,8 @@ class BearIO : public IOInterface
         void initRecv(); // initialize subscribers
         void initSend(); // initialize publishers
     
-        void StateCallback(const gazebo_msgs::ModelStates & msg);
+        // void StateCallback(const gazebo_msgs::ModelStates & msg);
+        void StateCallback(const sensor_msgs::Imu & msg);
 
         // void ContactLFCallback(const gazebo_msgs::ContactsState & msg);
         // void ContactLBCallback(const gazebo_msgs::ContactsState & msg);

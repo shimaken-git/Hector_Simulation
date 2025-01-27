@@ -46,11 +46,15 @@ link_directories(
 add_subdirectory(third_party/qpOASES)
 
 file(GLOB_RECURSE SRC_LIST
-"src/*/*.cpp"
+"src/common/*.cpp"
+"src/FSM/*.cpp"
+"src/interface/*.cpp"
 "src/*/*.h"
 "ConvexMPC/*.cpp"
 )
 add_executable(hector_ctrl src/main.cpp  ${SRC_LIST} )
 target_link_libraries(hector_ctrl ${catkin_LIBRARIES} qpOASES -pthread lcm)
+add_executable(touch_node src/touch_node/touch_node.cpp)
+target_link_libraries(touch_node ${catkin_LIBRARIES} )
 
 

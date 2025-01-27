@@ -158,9 +158,11 @@ void standLegController::setDesiredJointState(){
             // std::cout << data->_legController->commands[leg].qDes << std::endl;
             data->_legController->commands[leg].qdDes = Eigen::Matrix<double, 5, 1>::Zero();
             Eigen::VectorXd kpgains(5);
-            kpgains << 30, 30, 30, 30, 20;
+            // kpgains << 30, 30, 30, 30, 20;
+            kpgains << 20, 20, 20, 20, 20;
             Eigen::VectorXd kdgains(5);
-            kdgains << 1, 1, 1, 1, 1;
+            // kdgains << 1, 1, 1, 1, 1;
+            kdgains << 0.5, 0.5, 0.5, 0.5, 0.5;
              data->_legController->commands[leg].feedforwardForce << 0, 0, 0 , 0 , 0 , 0;
              data->_legController->commands[leg].pDes = pFoot_b[leg];
              data->_legController->commands[leg].vDes = vFoot_b[leg];

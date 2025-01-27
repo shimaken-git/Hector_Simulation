@@ -90,7 +90,7 @@ void BearIO::initSend(){
 }
 
 void BearIO::initRecv(){
-    _state_sub = _nm.subscribe("/gazebo/model_states", 1, &BearIO::StateCallback, this);
+    _state_sub = _nm.subscribe("/wit/imu", 1, &BearIO::StateCallback, this);
     _servo_sub[0] = _nm.subscribe( "/" + _robot_name + "/L_hip_controller/state", 1, &BearIO::LhipCallback, this);
     _servo_sub[1] = _nm.subscribe( "/" + _robot_name + "/L_hip2_controller/state", 1, &BearIO::Lhip2Callback, this);
     _servo_sub[2] = _nm.subscribe( "/" + _robot_name + "/L_thigh_controller/state", 1, &BearIO::LthighCallback, this);
@@ -102,10 +102,6 @@ void BearIO::initRecv(){
     _servo_sub[8] = _nm.subscribe( "/" + _robot_name + "/R_calf_controller/state", 1, &BearIO::RcalfCallback, this);
     _servo_sub[9] = _nm.subscribe( "/" + _robot_name + "/R_toe_controller/state", 1, &BearIO::RtoeCallback, this);
 
-    // _contact_sub[0] = _nm.subscribe("/bumper_LF", 1, &BearIO::ContactLFCallback, this);
-    // _contact_sub[1] = _nm.subscribe("/bumper_LB", 1, &BearIO::ContactLBCallback, this);
-    // _contact_sub[2] = _nm.subscribe("/bumper_RF", 1, &BearIO::ContactRFCallback, this);
-    // _contact_sub[3] = _nm.subscribe("/bumper_RB", 1, &BearIO::ContactRBCallback, this);
     _contact_sub = _nm.subscribe("/touch", 1, &BearIO::ContactCallback, this);
 
     // _contact_pub[0] = _nm.advertise<std_msgs::UInt8>( "/bumper_LF_int", 1);
@@ -114,34 +110,25 @@ void BearIO::initRecv(){
     // _contact_pub[3] = _nm.advertise<std_msgs::UInt8>( "/bumper_RB_int", 1);
 }
 
-void BearIO::StateCallback(const gazebo_msgs::ModelStates & msg)
+void BearIO::StateCallback(const sensor_msgs::Imu & msg)
 {
-    int robot_index;
-    // std::cout << msg.name.size() << std::endl;
-    for(int i = 0; i < msg.name.size(); i++)
-    {
-        if(msg.name[i] == _robot_name)
-        {
-            robot_index = i;
-        }
-    }
+    // _highState.position[0] = msg.pose[robot_index].position.x;
+    // _highState.position[1] = msg.pose[robot_index].position.y;
+    // _highState.position[2] = msg.pose[robot_index].position.z;
 
-    _highState.position[0] = msg.pose[robot_index].position.x;
-    _highState.position[1] = msg.pose[robot_index].position.y;
-    _highState.position[2] = msg.pose[robot_index].position.z;
+    // _highState.velocity[0] = msg.twist[robot_index].linear.x;
+    // _highState.velocity[1] = msg.twist[robot_index].linear.y;
+    // _highState.velocity[2] = msg.twist[robot_index].linear.z;
 
-    _highState.velocity[0] = msg.twist[robot_index].linear.x;
-    _highState.velocity[1] = msg.twist[robot_index].linear.y;
-    _highState.velocity[2] = msg.twist[robot_index].linear.z;
+    _highState.imu.quaternion[0] = msg.orientation.w;
+    _highState.imu.quaternion[1] = msg.orientation.x;
+    _highState.imu.quaternion[2] = msg.orientation.y;
+    _highState.imu.quaternion[3] = msg.orientation.z;
 
-    _highState.imu.quaternion[0] = msg.pose[robot_index].orientation.w;
-    _highState.imu.quaternion[1] = msg.pose[robot_index].orientation.x;
-    _highState.imu.quaternion[2] = msg.pose[robot_index].orientation.y;
-    _highState.imu.quaternion[3] = msg.pose[robot_index].orientation.z;
-
-    _highState.imu.gyroscope[0] = msg.twist[robot_index].angular.x;
-    _highState.imu.gyroscope[1] = msg.twist[robot_index].angular.y;
-    _highState.imu.gyroscope[2] = msg.twist[robot_index].angular.z;
+    _highState.imu.gyroscope[0] = msg.linear_acceleration.x;
+    _highState.imu.gyroscope[1] = msg.linear_acceleration.y;
+    _highState.imu.gyroscope[2] = msg.linear_acceleration.z;
+    ROS_INFO("state callback %f %f %f %f", msg.orientation.w, msg.orientation.x, msg.orientation.y, msg.orientation.z);
 }
 
 void BearIO::LhipCallback(const westwood_legged_msgs::MotorState& msg)
@@ -226,6 +213,7 @@ void BearIO::RtoeCallback(const westwood_legged_msgs::MotorState& msg)
 
 void BearIO::ContactCallback(const std_msgs::UInt8 & msg)
 {
+    ROS_INFO("contact callback %d", msg.data);
     for(int i = 0; i < 4; i++) bfr_contact[i] = contact[i];
     uint8_t b = 0x03;
     for(int i = 0; i < 4; i++){

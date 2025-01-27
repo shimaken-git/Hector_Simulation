@@ -3,10 +3,12 @@
 
 void CheaterPositionVelocityEstimator::run() {
  // std::cout << "run StateEstimator" << std::endl;
-  for(int i = 0; i < 3; i++){
-    this->_stateEstimatorData.result->position[i] = this->_stateEstimatorData.lowState->position[i];
-    this->_stateEstimatorData.result->vWorld[i] = this->_stateEstimatorData.lowState->vWorld[i];
-  }
+  // for(int i = 0; i < 3; i++){
+  //   this->_stateEstimatorData.result->position[i] = this->_stateEstimatorData.lowState->position[i];
+  //   this->_stateEstimatorData.result->vWorld[i] = this->_stateEstimatorData.lowState->vWorld[i];
+  // }
+  this->_stateEstimatorData.result->position = this->_stateEstimatorData.result->p_world;
+  this->_stateEstimatorData.result->vWorld = this->_stateEstimatorData.result->v_world;
 
 
   this->_stateEstimatorData.result->vBody=

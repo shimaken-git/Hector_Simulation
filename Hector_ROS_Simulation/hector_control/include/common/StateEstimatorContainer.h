@@ -39,6 +39,7 @@ SOFTWARE.
 
 #include "LegController.h"
 #include "../messages/LowlevelState.h"
+#include "../../include/common/Utilities/kalmanFilter.h"
 
 /*!
  * Result of state estimation
@@ -59,6 +60,7 @@ struct StateEstimate {
 
     bool p_world_confirm;
     Vec3<double> p_world;         //tipPrintより算出したworld position
+    Vec3<double> bfr_p_world;
     Vec3<double> v_world;         //tipPrintより算出したworld velocity
     Vec3<double> rtip[4];         //tipをrBodyで回転させたもの
     Vec3<double> tipPrint[4];
@@ -113,6 +115,9 @@ class StateEstimatorContainer {
         _data.lowState = _lowState;
         _data.legControllerData = _legControllerData;
         _data.result = stateEstimate;
+        kal[0].init(0.001);
+        kal[1].init(0.001);
+        kal[2].init(0.001);
     }
     // deconstructor
     ~StateEstimatorContainer() {
@@ -141,7 +146,11 @@ class StateEstimatorContainer {
 
     // set w_positon
     void set_p_world(Vec3<double> _position){
+        Vec3<double> vw;
+        _data.result->bfr_p_world = _data.result->p_world;
         _data.result->p_world = _position;
+        vw = (_data.result->p_world - _data.result->bfr_p_world) / 0.001;
+        for(int i = 0; i < 3; i++) _data.result->v_world[i] = kal[i].process(vw[i]);
     }
 
     // init w_positon
@@ -200,6 +209,8 @@ class StateEstimatorContainer {
     std::vector<GenericEstimator*> _estimators;
     Vec4<double> _phase;
     StateEstimatorData _data;
+
+    KalmanFilter kal[3];
 };
 
 
