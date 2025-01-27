@@ -21,7 +21,7 @@ void FSMState_Standing::enter()
     counter = 0;
     _data->_desiredStateCommand->firstRun = true;
     _data->_stateEstimator->run(); 
-    _data->_legController->zeroCommand();
+    _data->_legController->zeroCommand();  //LegControllerCommandの中身をゼロにする。feedforwardForceがクリアされるのが重要
     // Cmpc.firstRun = true;
 
     _data->_stateEstimator->init_p_world();
@@ -49,7 +49,6 @@ void FSMState_Standing::run()
     }
     stand.updateStandLeg();
 /*  updateStangLeg()の中身
-    resetFirstSwing();                ==> firstSwing[]=true   swingStates[]=0.1
     computeFootDesiredPosition();     ==> pFoot_b[]を確定させる
         pFoo_b[]の計算に向けて
             Vec3<double> pDesFootWorld = footSwingTrajectory[foot].getPosition().cast<double>();

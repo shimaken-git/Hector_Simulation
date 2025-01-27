@@ -69,6 +69,16 @@ void LegController::updateCommand(LowlevelCmd* cmd){
         std::cout << "leg:" << i << " tau: " << legtau[0] << " " << legtau[1] << " " << legtau[2] << " " << legtau[3] << " " << legtau[4] << std::endl;
         outputfile << "leg:" << i << " tau: " << legtau[0] << " " << legtau[1] << " " << legtau[2] << " " << legtau[3] << " " << legtau[4] << " ";
 
+#ifdef BEAR_REAL
+#ifdef TORQUE_RESTRICT
+        double torque_limit = 0.2;
+        for(int i = 0; i < 5; i++){
+            if(legtau[i] > torque_limit) legtau[i] = torque_limit;
+            if(legtau[i] < -torque_limit) legtau[i] = -torque_limit;
+        }
+#endif
+#endif
+
 
         // // cartesian PD control for swing foot
         // if(commands[i].kpCartesian(0,0) != 0 || commands[i].kdCartesian(0,0) != 0)

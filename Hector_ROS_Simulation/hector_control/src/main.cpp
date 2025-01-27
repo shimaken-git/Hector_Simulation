@@ -5,8 +5,7 @@
 #include <string>
 #include <thread>
 
-// #define BEAR_REAL
-
+#include "../include/common/robot_select.h"
 #include "../include/common/ControlFSMData.h"
 #include "../include/common/OrientationEstimator.h"
 #include "../include/common/PositionVelocityEstimator.h"
