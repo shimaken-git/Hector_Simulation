@@ -131,86 +131,86 @@ void BearIO::StateCallback(const sensor_msgs::Imu & msg)
     // ROS_INFO("state callback %f %f %f %f", msg.orientation.w, msg.orientation.x, msg.orientation.y, msg.orientation.z);
 }
 
-void BearIO::LhipCallback(const westwood_legged_msgs::MotorState& msg)
+void BearIO::LhipCallback(const westwood_legged_msgs::MotorStateConstPtr& msg)
 {
-    ROS_INFO("LhipCallback %f", msg.q);
-    _highState.motorState[0].mode = msg.mode;
-    _highState.motorState[0].q = msg.q;
-    _highState.motorState[0].dq = msg.dq;
-    _highState.motorState[0].tauEst = msg.tauEst;
+    ROS_INFO("LhipCallback %f", msg->q);
+    _highState.motorState[0].mode = msg->mode;
+    _highState.motorState[0].q = msg->q;
+    _highState.motorState[0].dq = msg->dq;
+    _highState.motorState[0].tauEst = msg->tauEst;
 }
 
-void BearIO::Lhip2Callback(const westwood_legged_msgs::MotorState& msg)
+void BearIO::Lhip2Callback(const westwood_legged_msgs::MotorStateConstPtr& msg)
 {
-    ROS_INFO("L2hipCallback %f", msg.q);
-    _highState.motorState[1].mode = msg.mode;
-    _highState.motorState[1].q = msg.q;
-    _highState.motorState[1].dq = msg.dq;
-    _highState.motorState[1].tauEst = msg.tauEst;
+    ROS_INFO("L2hipCallback %f", msg->q);
+    _highState.motorState[1].mode = msg->mode;
+    _highState.motorState[1].q = msg->q;
+    _highState.motorState[1].dq = msg->dq;
+    _highState.motorState[1].tauEst = msg->tauEst;
 }
 
-void BearIO::LthighCallback(const westwood_legged_msgs::MotorState& msg)
+void BearIO::LthighCallback(const westwood_legged_msgs::MotorStateConstPtr& msg)
 {
-    _highState.motorState[2].mode = msg.mode;
-    _highState.motorState[2].q = msg.q;
-    _highState.motorState[2].dq = msg.dq;
-    _highState.motorState[2].tauEst = msg.tauEst;
+    _highState.motorState[2].mode = msg->mode;
+    _highState.motorState[2].q = msg->q;
+    _highState.motorState[2].dq = msg->dq;
+    _highState.motorState[2].tauEst = msg->tauEst;
 }
 
-void BearIO::LcalfCallback(const westwood_legged_msgs::MotorState& msg)
+void BearIO::LcalfCallback(const westwood_legged_msgs::MotorStateConstPtr& msg)
 {
-    _highState.motorState[3].mode = msg.mode;
-    _highState.motorState[3].q = msg.q;
-    _highState.motorState[3].dq = msg.dq;
-    _highState.motorState[3].tauEst = msg.tauEst;
+    _highState.motorState[3].mode = msg->mode;
+    _highState.motorState[3].q = msg->q;
+    _highState.motorState[3].dq = msg->dq;
+    _highState.motorState[3].tauEst = msg->tauEst;
 }
 
-void BearIO::LtoeCallback(const westwood_legged_msgs::MotorState& msg)
+void BearIO::LtoeCallback(const westwood_legged_msgs::MotorStateConstPtr& msg)
 {
-    _highState.motorState[4].mode = msg.mode;
-    _highState.motorState[4].q = msg.q;
-    _highState.motorState[4].dq = msg.dq;
-    _highState.motorState[4].tauEst = msg.tauEst;
+    _highState.motorState[4].mode = msg->mode;
+    _highState.motorState[4].q = msg->q;
+    _highState.motorState[4].dq = msg->dq;
+    _highState.motorState[4].tauEst = msg->tauEst;
 }
 
-void BearIO::RhipCallback(const westwood_legged_msgs::MotorState& msg)
+void BearIO::RhipCallback(const westwood_legged_msgs::MotorStateConstPtr& msg)
 {
-    _highState.motorState[5].mode = msg.mode;
-    _highState.motorState[5].q = msg.q;
-    _highState.motorState[5].dq = msg.dq;
-    _highState.motorState[5].tauEst = msg.tauEst;
+    _highState.motorState[5].mode = msg->mode;
+    _highState.motorState[5].q = msg->q;
+    _highState.motorState[5].dq = msg->dq;
+    _highState.motorState[5].tauEst = msg->tauEst;
 }
 
-void BearIO::Rhip2Callback(const westwood_legged_msgs::MotorState& msg)
+void BearIO::Rhip2Callback(const westwood_legged_msgs::MotorStateConstPtr& msg)
 {
-    _highState.motorState[6].mode = msg.mode;
-    _highState.motorState[6].q = msg.q;
-    _highState.motorState[6].dq = msg.dq;
-    _highState.motorState[6].tauEst = msg.tauEst;
+    _highState.motorState[6].mode = msg->mode;
+    _highState.motorState[6].q = msg->q;
+    _highState.motorState[6].dq = msg->dq;
+    _highState.motorState[6].tauEst = msg->tauEst;
 }
 
-void BearIO::RthighCallback(const westwood_legged_msgs::MotorState& msg)
+void BearIO::RthighCallback(const westwood_legged_msgs::MotorStateConstPtr& msg)
 {
-    _highState.motorState[7].mode = msg.mode;
-    _highState.motorState[7].q = msg.q;
-    _highState.motorState[7].dq = msg.dq;
-    _highState.motorState[7].tauEst = msg.tauEst;
+    _highState.motorState[7].mode = msg->mode;
+    _highState.motorState[7].q = msg->q;
+    _highState.motorState[7].dq = msg->dq;
+    _highState.motorState[7].tauEst = msg->tauEst;
 }
 
-void BearIO::RcalfCallback(const westwood_legged_msgs::MotorState& msg)
+void BearIO::RcalfCallback(const westwood_legged_msgs::MotorStateConstPtr& msg)
 {
-    _highState.motorState[8].mode = msg.mode;
-    _highState.motorState[8].q = msg.q;
-    _highState.motorState[8].dq = msg.dq;
-    _highState.motorState[8].tauEst = msg.tauEst;
+    _highState.motorState[8].mode = msg->mode;
+    _highState.motorState[8].q = msg->q;
+    _highState.motorState[8].dq = msg->dq;
+    _highState.motorState[8].tauEst = msg->tauEst;
 }
 
-void BearIO::RtoeCallback(const westwood_legged_msgs::MotorState& msg)
+void BearIO::RtoeCallback(const westwood_legged_msgs::MotorStateConstPtr& msg)
 {
-    _highState.motorState[9].mode = msg.mode;
-    _highState.motorState[9].q = msg.q;
-    _highState.motorState[9].dq = msg.dq;
-    _highState.motorState[9].tauEst = msg.tauEst;
+    _highState.motorState[9].mode = msg->mode;
+    _highState.motorState[9].q = msg->q;
+    _highState.motorState[9].dq = msg->dq;
+    _highState.motorState[9].tauEst = msg->tauEst;
 }
 
 void BearIO::ContactCallback(const std_msgs::UInt8 & msg)
