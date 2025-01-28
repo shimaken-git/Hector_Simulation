@@ -33,12 +33,12 @@
           args="-urdf 
           -z 0.335
           -x 0.0
-          -J L_thigh_joint 0.785398163
-          -J L_calf_joint -1.570796327
-          -J L_toe_joint 0.785398163
-          -J R_thigh_joint 0.785398163
-          -J R_calf_joint -1.570796327
-          -J R_toe_joint 0.785398163
+          -J L_thigh_joint -0.785398163
+          -J L_calf_joint 1.570796327
+          -J L_toe_joint -0.785398163
+          -J R_thigh_joint -0.785398163
+          -J R_calf_joint 1.570796327
+          -J R_toe_joint -0.785398163
           -model hector_gazebo -param robot_description "/>
 
           <!-- -J L_thigh_joint 0.523598776

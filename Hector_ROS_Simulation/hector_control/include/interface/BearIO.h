@@ -51,16 +51,16 @@ class BearIO : public IOInterface
         // void ContactRBCallback(const gazebo_msgs::ContactsState & msg);
         void ContactCallback(const std_msgs::UInt8 & msg);
 
-        void LhipCallback(const westwood_legged_msgs::MotorState& msg);
-        void Lhip2Callback(const westwood_legged_msgs::MotorState& msg);
-        void LthighCallback(const westwood_legged_msgs::MotorState& msg);
-        void LcalfCallback(const westwood_legged_msgs::MotorState& msg);
-        void LtoeCallback(const westwood_legged_msgs::MotorState& msg);
-        void RhipCallback(const westwood_legged_msgs::MotorState& msg);
-        void Rhip2Callback(const westwood_legged_msgs::MotorState& msg);
-        void RthighCallback(const westwood_legged_msgs::MotorState& msg);
-        void RcalfCallback(const westwood_legged_msgs::MotorState& msg);
-        void RtoeCallback(const westwood_legged_msgs::MotorState& msg);
+        void LhipCallback(const westwood_legged_msgs::MotorStateConstPtr& msg);
+        void Lhip2Callback(const westwood_legged_msgs::MotorStateConstPtr& msg);
+        void LthighCallback(const westwood_legged_msgs::MotorStateConstPtr& msg);
+        void LcalfCallback(const westwood_legged_msgs::MotorStateConstPtr& msg);
+        void LtoeCallback(const westwood_legged_msgs::MotorStateConstPtr& msg);
+        void RhipCallback(const westwood_legged_msgs::MotorStateConstPtr& msg);
+        void Rhip2Callback(const westwood_legged_msgs::MotorStateConstPtr& msg);
+        void RthighCallback(const westwood_legged_msgs::MotorStateConstPtr& msg);
+        void RcalfCallback(const westwood_legged_msgs::MotorStateConstPtr& msg);
+        void RtoeCallback(const westwood_legged_msgs::MotorStateConstPtr& msg);
 
 };   
 

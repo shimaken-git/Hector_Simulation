@@ -52,10 +52,10 @@ void LegIk::computeIK_(const Vec3<double> &bodyPositionDesired, Eigen::Matrix<do
         // Joint angle calculations
         jointAngles[0] = 0.0; 
         jointAngles[1] = std::asin(clamp(foot_des_to_hip_roll[1] / distance_2D_yOz, -1.0, 1.0));
-        // jointAngles[2] = std::acos(acosArg1) - std::acos(acosArg2) * (foot_des_to_hip_roll[0]) / divisor;
-        jointAngles[2] = -std::acos(acosArg1) - std::acos(acosArg2) * (foot_des_to_hip_roll[0]) / divisor;
-        // jointAngles[3] = 2.0 * std::asin(clamp(distance_2D_xOz / 2.0 / l, -1.0, 1.0)) - M_PI;
-        jointAngles[3] = M_PI - 2.0 * std::asin(clamp(distance_2D_xOz / 2.0 / l, -1.0, 1.0));
+        // jointAngles[2] = std::acos(acosArg1) - std::acos(acosArg2) * (foot_des_to_hip_roll[0]) / divisor;   //鳥足
+        jointAngles[2] = -std::acos(acosArg1) - std::acos(acosArg2) * (foot_des_to_hip_roll[0]) / divisor;     //ヒト足
+        // jointAngles[3] = 2.0 * std::asin(clamp(distance_2D_xOz / 2.0 / l, -1.0, 1.0)) - M_PI;   //鳥足
+        jointAngles[3] = M_PI - 2.0 * std::asin(clamp(distance_2D_xOz / 2.0 / l, -1.0, 1.0));     //ヒト足
         jointAngles[4] = -jointAngles[3] - jointAngles[2];
         // jointAngles[4] = -data->_legController->data[leg].q(3)-data->_legController->data[leg].q(2) - ori::rotationMatrixToRPY(seResult.rBody)[1]; // q3 - q2
 #endif
