@@ -496,8 +496,13 @@ void solve_mpc(update_data_t *update, problem_setup *setup, double mass)
   fpt lh = 0.06;
 #else
 #if defined(_LAMBDA_) || defined(_LAMBDA_R2_)
+#ifdef HUMAN
+  fpt lt = -0.02;
+  fpt lh = -0.04;
+#else
   fpt lt = 0.04;
   fpt lh = 0.02;
+#endif
 #endif
 #endif
 

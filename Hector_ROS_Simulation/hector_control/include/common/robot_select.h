@@ -6,3 +6,6 @@
 // #define BEAR_REAL
 // #define TORQUE_RESTRICT
 #endif
+
+// #define FOOTSENSOR
+#define HUMAN
