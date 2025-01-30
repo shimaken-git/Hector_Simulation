@@ -52,9 +52,11 @@ class Biped {
             leg_yaw_offset_x(0.0),
             leg_yaw_offset_y(0.053),    // wwlambda
             // leg_yaw_offset_z(-0.042),    // CoM
-            leg_yaw_offset_z(-0.091),    // CoM   +PC
+            // leg_yaw_offset_z(-0.091),    // CoM   +PC
+            leg_yaw_offset_z(-0.085),    // CoM   +PC
             leg_roll_offset_x(0.0),
-            leg_roll_offset_y(0.0),
+            // leg_roll_offset_y(0.0),
+            leg_roll_offset_y(0.009),
             leg_roll_offset_z(0.0),
             hipLinkLength(0.0),
             thighLinkLength(0.153),

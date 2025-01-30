@@ -149,14 +149,15 @@ void computeLegJacobianAndPosition(Biped& _biped, Vec5<double>& q, Mat65<double>
 #else
 #if defined(_LAMBDA_R2_)
     //J0を原点とする座標計算
-    double l1 = 0.0;     //
-    double l2 = 0.0;
-    double l3 = 0.007;
-    double l4 = 0.0;
-    double l5 = 0.153;
-    double l6 = 0.153;
-    double l7 = 0.04;
-    double l9 = 0.053;   //y    //J0原点なので使わない
+    double l1 = 0.0;     //z
+    double l2 = 0.0;     //x
+    // double l3 = 0.007;   //y  なんだっけ。p()に関与しないのでJ0より上
+    double l3 = 0.009;   //leg_roll_offset_y
+    double l4 = 0.0;     //y
+    double l5 = 0.153;   //thighLinkLength
+    double l6 = 0.153;   //calfLinkLength
+    double l7 = 0.04;    //足首から足裏まで
+    double l9 = 0.053;   //leg_yaw_offset_y    //J0原点なので使わない
 
 #endif
 #endif
@@ -325,16 +326,16 @@ void computeLegJacobianAndPosition(Biped& _biped, Vec5<double>& q, Mat65<double>
 
 void computeHeelToePosition(Biped& _biped, Vec5<double>& q, Vec3<double>* toe, Vec3<double>* heel, int leg)
 {
-
+    //trunk(imu)原点
     Vec3<double> hipyaw = _biped.getHipYawLocation(leg);
     Vec3<double> hiproll = _biped.getHipRollLocation(leg);
-    double l1 = hipyaw[1];  // y
+    double l1 = hipyaw[1];  // y   leg_roll_offset_y _bipedでは0.0だが、
     double l2 = hipyaw[2];  // z
-    double l3 = hiproll[1]; // y
-    double l4 = hiproll[2]; // z
-    double l5 = 0.153;      // z
-    double l6 = 0.153;      // z
-    double l7 = 0.04;       // z
+    double l3 = hiproll[1]; // y   
+    double l4 = hiproll[2]; // z   leg_yaw_offset_z xacroだと-0.085 _bipedでは-0.091
+    double l5 = 0.153;      // z   = _biped.thighLinkLength;
+    double l6 = 0.153;      // z   = _biped.calfLinkLength;
+    double l7 = 0.04;       // z   足首から足裏
     double l8 = 0.05;       // x
     double l9 = 0.05;       // x
 
