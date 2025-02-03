@@ -169,8 +169,10 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
       0, 0, 10;
   Kd_stance = 0*Kd;
   // gait
-  Vec2<double> contactStates = gait->getContactSubPhase();
-  Vec2<double> swingStates = gait->getSwingSubPhase();
+  // Vec2<double> contactStates = gait->getContactSubPhase();
+  // Vec2<double> swingStates = gait->getSwingSubPhase();
+  contactStates = gait->getContactSubPhase();
+  swingStates = gait->getSwingSubPhase();
 
   int *mpcTable = gait->mpc_gait();
   

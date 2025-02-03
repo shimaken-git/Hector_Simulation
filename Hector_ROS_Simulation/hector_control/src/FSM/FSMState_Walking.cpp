@@ -17,6 +17,7 @@ void FSMState_Walking::enter()
     v_des_body << 0, 0, 0;
     pitch = 0;
     roll = 0;
+    req_stand = false;
      _data->_interface->zeroCmdPanel();
     counter = 0;
     _data->_desiredStateCommand->firstRun = true;
@@ -24,7 +25,7 @@ void FSMState_Walking::enter()
     _data->_legController->zeroCommand();
     Cmpc.firstRun = true;
 
-    _data->_stateEstimator->init_p_world();
+    // _data->_stateEstimator->init_p_world();
     _data->_stateEstimator->set_firstStage(true);
 }
 
@@ -33,9 +34,9 @@ void FSMState_Walking::run()
     std::cout << "FSMState_Walking::run()" << std::endl;
 
     _data->_legController->updateData(_data->_lowState);
+    tipRun();
     _data->_stateEstimator->run(); 
     _userValue = _data->_lowState->userValue;
-    tipRun();
 
 
     v_des_body[0] = (double)invNormalize(_userValue.ly, -0.75, 0.75);
@@ -59,11 +60,17 @@ void FSMState_Walking::exit()
 FSMStateName FSMState_Walking::checkTransition()
 {
     std::cout << "FSMState_Walking::checkTransition()" << std::endl;
-    if(_lowState->userCmd == UserCommand::L2_B){
+    if(req_stand){
+        Vec2<double> cs = Cmpc.getContactStates();
+        if(cs(0) == 1.0 || cs(1) == 1.0) return FSMStateName::PDSTAND;
+        else return FSMStateName::WALKING;
+    }
+    else if(_lowState->userCmd == UserCommand::L2_B){
         return FSMStateName::PASSIVE;
     }
     else if(_lowState->userCmd == UserCommand::L1_A){
-        return FSMStateName::PDSTAND;
+        req_stand = true;
+        return FSMStateName::WALKING;
     }
     else{
         return FSMStateName::WALKING;

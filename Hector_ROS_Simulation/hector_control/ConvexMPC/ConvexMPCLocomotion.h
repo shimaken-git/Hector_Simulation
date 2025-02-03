@@ -42,6 +42,8 @@ public:
     // Main Functionalities
     void run(ControlFSMData& data);
     void setGaitNum(int gaitNum) { gaitNumber = gaitNum; }
+    Vec2<double> getContactStates(){ return contactStates;}
+    Vec2<double> getSwingStates(){ return swingStates;}
     bool firstRun = true;
     bool restart = false;
 
@@ -98,7 +100,11 @@ private:
     Vec3<double> v_des_robot;
     bool climb = 0;
     ofstream foot_position;
-    Vec3<double> ori_des_world;    
+    Vec3<double> ori_des_world;
+
+    Vec2<double> contactStates;
+    Vec2<double> swingStates;
+
 };
 
 

@@ -21,6 +21,7 @@ class FSMState_Walking: public FSMState
         Vec3<double> v_des_body;
         double turn_rate = 0;
         double pitch, roll;
+        bool req_stand;
 };
 
 #endif

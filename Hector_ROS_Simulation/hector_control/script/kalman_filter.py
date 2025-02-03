@@ -17,9 +17,9 @@ args = sys.argv
 dt = 0.001  # 時間ステップ（秒）
 A = np.array([[1, dt], [0, 1]])  # 状態遷移行列
 H = np.array([[1, 0]])           # 観測行列
-Q = np.array([[0.0001, 0],         # プロセスノイズ共分散
-              [0, 1.0]])
-R = np.array([[0.5]])            # 観測ノイズ共分散
+Q = np.array([[0.001, 0],         # プロセスノイズ共分散
+              [0, 0.001]])
+R = np.array([[0.25]])            # 観測ノイズ共分散
 I = np.eye(2)                    # 単位行列
 
 # 初期値
@@ -31,7 +31,7 @@ pi2 = np.pi / 2
 def vworldCb(msg):
     print(msg)
     out = Vector3()
-    out.y = kalman_filter(msg.y)
+    out.z = kalman_filter(msg.z)
     pub.publish(out)
 
 def main():

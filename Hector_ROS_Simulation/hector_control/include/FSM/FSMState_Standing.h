@@ -16,6 +16,7 @@ class FSMState_Standing: public FSMState
         void run();
         void exit();
         FSMStateName checkTransition();
+        void tipRun();
     
     private:
         standLegController stand;

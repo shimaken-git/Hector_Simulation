@@ -40,6 +40,7 @@ SOFTWARE.
 #include "LegController.h"
 #include "../messages/LowlevelState.h"
 #include "../../include/common/Utilities/kalmanFilter.h"
+#include <list>
 
 /*!
  * Result of state estimation
@@ -61,7 +62,9 @@ struct StateEstimate {
     bool p_world_confirm;
     Vec3<double> p_world;         //tipPrintより算出したworld position
     Vec3<double> bfr_p_world;
+    Vec3<double> bfr_bfr_p_world;
     Vec3<double> v_world;         //tipPrintより算出したworld velocity
+    std::list<Vec3<double> > b_vworld;
     Vec3<double> rtip[4];         //tipをrBodyで回転させたもの
     Vec3<double> tipPrint[4];
     bool tipPrint_confirm[4];
@@ -146,11 +149,15 @@ class StateEstimatorContainer {
 
     // set w_positon
     void set_p_world(Vec3<double> _position){
+        // _data.result->v_world = _data.result->p_world.cross(_data.result->omegaWorld /6.9);   //位置×角速度を試した。うまく行かない
         Vec3<double> vw;
+        // _data.result->bfr_bfr_p_world = _data.result->bfr_p_world;
         _data.result->bfr_p_world = _data.result->p_world;
-        _data.result->p_world = _position;
+        _data.result->p_world = _data.result->p_world * 0.85 + _position * 0.15;
         vw = (_data.result->p_world - _data.result->bfr_p_world) / 0.001;
-        for(int i = 0; i < 3; i++) _data.result->v_world[i] = kal[i].process(vw[i]);
+        _data.result->v_world = _data.result->v_world * 0.85 + vw * 0.15;
+        // vw = _data.result->v_world * 0.85 + vw * 0.15;
+        // for(int i = 0; i < 3; i++) _data.result->v_world[i] = kal[i].process(vw[i]);
     }
 
     // init w_positon
