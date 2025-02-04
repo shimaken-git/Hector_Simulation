@@ -24,6 +24,7 @@ class FSMState
         std::string _stateNameStr;
 
     protected:
+        void FSMState::tipRun();
         ControlFSMData *_data;
         FSMStateName _nextStateName;
 

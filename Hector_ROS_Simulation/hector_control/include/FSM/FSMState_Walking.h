@@ -13,7 +13,7 @@ class FSMState_Walking: public FSMState
         void run();
         void exit();
         FSMStateName checkTransition();
-        void tipRun();
+        // void tipRun();
     
     private:
         ConvexMPCLocomotion Cmpc;

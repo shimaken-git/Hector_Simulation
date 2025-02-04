@@ -118,9 +118,9 @@ class StateEstimatorContainer {
         _data.lowState = _lowState;
         _data.legControllerData = _legControllerData;
         _data.result = stateEstimate;
-        kal[0].init(0.001);
-        kal[1].init(0.001);
-        kal[2].init(0.001);
+        // kal[0].init(0.001);
+        // kal[1].init(0.001);
+        // kal[2].init(0.001);
     }
     // deconstructor
     ~StateEstimatorContainer() {
@@ -217,7 +217,7 @@ class StateEstimatorContainer {
     Vec4<double> _phase;
     StateEstimatorData _data;
 
-    KalmanFilter kal[3];
+    // KalmanFilter kal[3];
 };
 
 
