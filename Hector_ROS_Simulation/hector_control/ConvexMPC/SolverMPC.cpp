@@ -497,8 +497,12 @@ void solve_mpc(update_data_t *update, problem_setup *setup, double mass)
 #else
 #if defined(_LAMBDA_) || defined(_LAMBDA_R2_)
 #ifdef HUMAN
-  fpt lt = 0.02;
-  fpt lh = 0.04;
+  // fpt lt = 0.02;        //gazeboPluginでの設定
+  // fpt lh = 0.04;        //gazeboPluginでの設定
+  // fpt lt = -0.02;    //一応は歩けた設定
+  // fpt lh = -0.04;    //一応は歩けた設定
+  fpt lt = -0.01;    //後ろには下がらないけれど、前には進めない
+  fpt lh = -0.03;    //後ろには下がらないけれど、前には進めない
 #else
   fpt lt = 0.04;
   fpt lh = 0.02;
