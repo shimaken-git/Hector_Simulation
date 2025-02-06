@@ -7,5 +7,5 @@
 // #define TORQUE_RESTRICT           //トルク制限設定
 #endif
 
-#define FOOTSENSOR                   //足裏を足がかりに自己位置計算
+// #define FOOTSENSOR                   //足裏を足がかりに自己位置計算
 #define HUMAN                        //ヒト足モード

@@ -16,8 +16,8 @@ ConvexMPCLocomotion::ConvexMPCLocomotion(double _dt, int _iterations_between_mpc
  dt(_dt),
  height(_height),
  mass(_mass),
- walking(horizonLength, Vec2<int>(0, 5), Vec2<int>(5, 5), "Walking"),
- standing(horizonLength, Vec2<int>(0, 0), Vec2<int>(10, 10), "Standing")
+ walking(12, Vec2<int>(0, 6), Vec2<int>(6, 6), "Walking"),
+ standing(16, Vec2<int>(0, 0), Vec2<int>(16, 16), "Standing")
 {
   gaitNumber = 1;
   dtMPC = dt * iterationsBetweenMPC;
