@@ -36,14 +36,14 @@ public:
 
 
 private:
-  int _nMPC_segments;
+  // int _nMPC_segments;   使ってない
   int* _mpc_table;
   Array2i _offsets;           // offset in mpc segments
   Array2i _durations;         // duration of step in mpc segments
   Array2d _offsetsPhase;      // offsets in phase (0 to 1)
   Array2d _durationsPhase;    // durations in phase (0 to 1)
-  int _iteration;
-  int _nIterations;
+  int _iteration;    //
+  int _nIterations;  //1cycle(2steps) of mpc segments
   // int currentIteration;   使ってない
   double _phase;
 

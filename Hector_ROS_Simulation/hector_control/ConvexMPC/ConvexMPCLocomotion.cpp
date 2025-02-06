@@ -23,12 +23,15 @@ ConvexMPCLocomotion::ConvexMPCLocomotion(double _dt, int _iterations_between_mpc
   dtMPC = dt * iterationsBetweenMPC;
 #ifdef _HECTOR_
   f_max = 500;
+  mu = 0.25;
 #else
 #ifdef _LAMBDA_
   f_max = 100;
+  mu = 0.25;
 #else
 #ifdef _LAMBDA_R2_
   f_max = 100;
+  mu = 0.25;
 #endif
 #endif
 #endif
@@ -358,7 +361,7 @@ void ConvexMPCLocomotion::updateMPCIfNeeded(int *mpcTable, ControlFSMData &data,
 
     //MPC Solver Setup
     dtMPC = dt * iterationsBetweenMPC;
-    setup_problem(dtMPC, horizonLength, 0.25, f_max);     // dt, horizon, mu, f_max
+    setup_problem(dtMPC, horizonLength, mu, f_max);     // dt, horizon, mu, f_max
     
     //Solve MPC
     Timer t_mpc_solve;

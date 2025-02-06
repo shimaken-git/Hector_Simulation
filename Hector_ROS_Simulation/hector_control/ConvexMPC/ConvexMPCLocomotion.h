@@ -68,6 +68,7 @@ private:
     double height;
     double mass;
     double f_max;
+    double mu;
 
     // Feedback and Control Variables
     Mat3<double> Kp, Kd, Kp_stance, Kd_stance;
