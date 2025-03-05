@@ -101,7 +101,7 @@ class Biped {
             hipLinkLength(0.0),
             thighLinkLength(0.153),
             calfLinkLength(0.153),
-            height(0.335) {}
+            height(0.370) {}
         Vec3<double> getHipYawLocation(int leg) const {
             checkLegIndex(leg);
             return Vec3<double>(leg_yaw_offset_x, leg == 0 ? leg_yaw_offset_y : -leg_yaw_offset_y, leg_yaw_offset_z);

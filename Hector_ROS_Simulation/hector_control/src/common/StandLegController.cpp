@@ -163,17 +163,11 @@ void standLegController::setDesiredJointState(){
             // std::cout << data->_legController->commands[leg].qDes << std::endl;
             data->_legController->commands[leg].qdDes = Eigen::Matrix<double, 5, 1>::Zero();
 #ifdef BEAR_REAL
-#ifdef TORQUE_RESTRICT
-            Eigen::VectorXd kpgains(5);
-            kpgains << 2, 2, 2, 2, 2;
-            Eigen::VectorXd kdgains(5);
-            kdgains << 0.1, 0.1, 0.1, 0.1, 0.1;
-#else
+// #ifdef TORQUE_RESTRICT
             Eigen::VectorXd kpgains(5);
             kpgains << 20, 20, 20, 20, 20;
             Eigen::VectorXd kdgains(5);
             kdgains << 0.5, 0.5, 0.5, 0.5, 0.5;
-#endif
 #else
             Eigen::VectorXd kpgains(5);
             kpgains << 30, 30, 30, 30, 20;

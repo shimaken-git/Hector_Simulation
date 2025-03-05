@@ -16,8 +16,9 @@ ConvexMPCLocomotion::ConvexMPCLocomotion(double _dt, int _iterations_between_mpc
  dt(_dt),
  height(_height),
  mass(_mass),
+//  walking(10, Vec2<int>(0, 5), Vec2<int>(5, 5), "Walking"),
  walking(12, Vec2<int>(0, 6), Vec2<int>(6, 6), "Walking"),
- standing(16, Vec2<int>(0, 0), Vec2<int>(16, 16), "Standing")
+ standing(10, Vec2<int>(0, 0), Vec2<int>(10, 10), "Standing")
 {
   gaitNumber = 1;
   dtMPC = dt * iterationsBetweenMPC;
@@ -30,7 +31,7 @@ ConvexMPCLocomotion::ConvexMPCLocomotion(double _dt, int _iterations_between_mpc
   mu = 0.25;
 #else
 #ifdef _LAMBDA_R2_
-  f_max = 100;
+  f_max = 200;
   mu = 0.25;
 #endif
 #endif
@@ -275,7 +276,9 @@ void ConvexMPCLocomotion::updateMPCIfNeeded(int *mpcTable, ControlFSMData &data,
       r[i] = pFoot[i % 2][i / 2] - seResult.position[i / 2];
     }
     //MPC Weights
-    double Q[12] = {100, 100, 250,  200, 200, 300,  1, 1, 1,  1, 1, 1}; // roll pitch yaw x y z droll dpitch dyaw dx dy dz
+    // double Q[12] = {100, 100, 250,  200, 200, 300,  1, 1, 1,  1, 1, 1}; // roll pitch yaw x y z droll dpitch dyaw dx dy dz
+    double Q[12] = {100, 100, 250,  1, 200, 300,  1, 1, 1,  1, 1, 1}; // roll pitch yaw x y z droll dpitch dyaw dx dy dz
+    // double Q[12] = {100, 500, 250,  1, 200, 300,  1, 1, 1,  1, 1, 1}; // roll pitch yaw x y z droll dpitch dyaw dx dy dz
     double Alpha[12] = {1e-4, 1e-4, 5e-4, 1e-4, 1e-4, 5e-4,   1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2};
 
     double *weights = Q;
@@ -284,6 +287,7 @@ void ConvexMPCLocomotion::updateMPCIfNeeded(int *mpcTable, ControlFSMData &data,
     double yaw = seResult.rpy[2];
 
     std::cout << "current position: " << p[0] << "  "<< p[1] << "  "<< p[2] << std::endl;
+    std::cout << "current pose roll: " << seResult.rpy[0] << " pitch: " << seResult.rpy[1] << " yaw: " << seResult.rpy[2] << std::endl;
 
 
     v_des_robot << stateCommand->data.stateDes[6], stateCommand->data.stateDes[7], 0;
@@ -319,6 +323,7 @@ void ConvexMPCLocomotion::updateMPCIfNeeded(int *mpcTable, ControlFSMData &data,
                               v_des_world[1],                           // 10  vel_y
                               0};                                       // 11  vel_z
 
+    std::cout << "trajAll[] ";
     for (int i = 0; i < horizonLength; i++)
     {
       for (int j = 0; j < 12; j++)
@@ -356,8 +361,9 @@ void ConvexMPCLocomotion::updateMPCIfNeeded(int *mpcTable, ControlFSMData &data,
       //stateDes[]では6～8が[m/s] 9～11が[rad/s]のようだ。
       // Cf.1
       // trajInitial[2]が0.0だと、stateDes[11]==0の時に0.0がセットされてしまうのでまずい。
-
+      std::cout << trajAll[12*i + 2] << " ";
     }
+    std::cout << std::endl;
 
     //MPC Solver Setup
     dtMPC = dt * iterationsBetweenMPC;

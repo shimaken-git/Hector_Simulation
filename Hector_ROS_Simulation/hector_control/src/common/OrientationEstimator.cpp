@@ -23,7 +23,7 @@ void CheaterOrientationEstimator::run() {
       this->_stateEstimatorData.lowState->imu.gyroscope[1]*1.0;
   this->_stateEstimatorData.result->omegaWorld(2) =
       this->_stateEstimatorData.lowState->imu.gyroscope[2]*1.0;
-      this->_stateEstimatorData.result->rpy =
+  this->_stateEstimatorData.result->rpy =
     ori::quatToRPY(this->_stateEstimatorData.result->orientation);
 
   this->_stateEstimatorData.result->omegaBody =

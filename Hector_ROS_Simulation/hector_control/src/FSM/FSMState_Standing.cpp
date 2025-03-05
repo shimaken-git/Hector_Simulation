@@ -81,6 +81,9 @@ FSMStateName FSMState_Standing::checkTransition()
     if(_lowState->userCmd == UserCommand::L1_X){
         return FSMStateName::WALKING;
     }
+    else if(_lowState->userCmd == UserCommand::L2_B){
+        return FSMStateName::PASSIVE;
+    }
     else{
         return FSMStateName::PDSTAND;
     }

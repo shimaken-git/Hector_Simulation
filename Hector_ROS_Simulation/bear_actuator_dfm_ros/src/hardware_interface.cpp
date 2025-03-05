@@ -743,9 +743,9 @@ void HardwareInterface::write()
     //   ROS_INFO("dfm %f %f %f %f %f %f", joints_[i].dfm[0], joints_[i].dfm[1], joints_[i].dfm[2], joints_[i].dfm[3], joints_[i].dfm[4], joints_[i].dfm[5]);
     // }
   }
-  else if(interface_ == "position") for(int i = 0; i < col; i++) position_data(i, 0) = joints_[i].dfm[DFM_POS];
+  if(interface_ == "position") for(int i = 0; i < col; i++) position_data(i, 0) = joints_[i].dfm[DFM_POS];
   else if(interface_ == "velocity") for(int i = 0; i < col; i++) velocity_data(i, 0) = joints_[i].dfm[DFM_VEL];
-  else if(interface_ == "effort") for(int i = 0; i < col; i++){
+  else if(interface_ == "effort" || interface_ == "dfm") for(int i = 0; i < col; i++){
     if(protect[i]) effort_data(i, 0) = counter_effort[i];
     else effort_data(i, 0) = joints_[i].dfm[DFM_EFT];
   }
@@ -766,7 +766,7 @@ void HardwareInterface::write()
       std::vector<float> _data;
       _data.push_back(actuator_pos_data(idx, 0));
       _data.push_back(actuator_vel_data(idx, 0));
-      _data.push_back(actuator_eft_data(idx, 0));
+      _data.push_back(actuator_eft_data(idx, 0) / torque_constant);
       data.push_back(_data);
     }
     // for(int id = 0; id < data.size(); id++){           ///////////////////////////////////

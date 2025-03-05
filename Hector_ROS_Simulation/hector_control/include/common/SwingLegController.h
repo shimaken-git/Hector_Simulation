@@ -88,7 +88,12 @@ class swingLegController : public LegIk {
         const double footHeight = 0.15;        //足上げ高さ
 #else
 #ifdef _LAMBDA_R2_
+#ifdef debug
+        const double footHeight = 0.06;        //足上げ高さ
+#else
         const double footHeight = 0.15;        //足上げ高さ
+#endif
+
 #endif
 #endif
 #endif

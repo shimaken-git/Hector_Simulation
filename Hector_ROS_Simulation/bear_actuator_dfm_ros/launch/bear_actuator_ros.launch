@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="usb_port" default="/dev/ttyUSB0" />
+  <arg name="usb_port" default="/dev/ttyUSB_robotis" />
   <arg name="baud_rate" default="8000000" />
   <arg name="yaml_file" default="$(find bear_actuator_dfm_ros)/config/hardware.yaml"/>
   <arg name="interface" default="dfm"/>

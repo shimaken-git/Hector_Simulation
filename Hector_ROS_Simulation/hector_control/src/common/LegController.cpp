@@ -11,7 +11,7 @@ Vec3<double> rot2omega(Eigen::Matrix3d r);
 
 void LegControllerCommand::zero(){
     tau = Vec5<double>::Zero();
-    qDes = Vec5<double>::Zero();
+    // qDes = Vec5<double>::Zero();     //角度ゼロが先に有効になってしまうのでコメントアウト
     qdDes = Vec5<double>::Zero();
     pDes = Vec3<double>::Zero();
     vDes = Vec3<double>::Zero();
@@ -66,13 +66,16 @@ void LegController::updateCommand(LowlevelCmd* cmd){
         Vec6<double> footForce = commands[i].feedforwardForce;
         Vec5<double> legtau = data[i].J_force_moment.transpose() * footForce; // force moment from stance leg
 
+        // legtau[4] *= 0.5;    //足首がくねるを防ぐために足首トルクを半分にしてみた。
         std::cout << "leg:" << i << " tau: " << legtau[0] << " " << legtau[1] << " " << legtau[2] << " " << legtau[3] << " " << legtau[4] << std::endl;
         outputfile << "leg:" << i << " tau: " << legtau[0] << " " << legtau[1] << " " << legtau[2] << " " << legtau[3] << " " << legtau[4] << " ";
 
 #ifdef BEAR_REAL
 #ifdef TORQUE_RESTRICT
-        double torque_limit = 0.2;
+        double torque_limit = 15.0;
         for(int i = 0; i < 5; i++){
+            // legtau[i] = 0.0;
+            // legtau[i] *= 0.9;
             if(legtau[i] > torque_limit) legtau[i] = torque_limit;
             if(legtau[i] < -torque_limit) legtau[i] = -torque_limit;
         }
@@ -101,6 +104,7 @@ void LegController::updateCommand(LowlevelCmd* cmd){
         //     }
         // }
 
+        // outputfile << "leg" << i << std::endl;
         commands[i].tau += legtau;
 
         for (int j = 0; j < 5; j++){
@@ -109,6 +113,7 @@ void LegController::updateCommand(LowlevelCmd* cmd){
             cmd->motorCmd[i*5+j].dq = commands[i].qdDes(j);
             cmd->motorCmd[i*5+j].Kp = commands[i].kpJoint(j,j);
             cmd->motorCmd[i*5+j].Kd = commands[i].kdJoint(j,j);
+            // outputfile << commands[i].tau(j) << " " << commands[i].qDes(j) << " " << commands[i].qdDes(j) << " " << commands[i].kpJoint(j,j) << " " << commands[i].kdJoint(j,j) << std::endl;
             // std::cout << Side[i] << " " << limbName[j] <<" torque cmd  =  " << cmd->motorCmd[i*5+j].tau << std::endl;            
         }
 
@@ -318,8 +323,10 @@ void computeLegJacobianAndPosition(Biped& _biped, Vec5<double>& q, Mat65<double>
     }
 
    if(p){
-    p->operator()(0) = - l3*(side)*sin(q0) - l4*(side)*sin(q0)*cos(q1) - l2*cos(q0) - l7*cos(q0)*sin(q2 + q3 + q4) - l5*cos(q0)*(sin(q2) + sin(q2 + q3)) - l6*(sin(q0)*sin(q1)*(cos(q2 + q3) + cos(q2))) - l7*sin(q0)*sin(q1)*cos(q2 + q3 + q4);
-    p->operator()(1) = l3*(side)*cos(q0) + l4*(side)*cos(q0)*cos(q1) - l2*sin(q0) - l7*(sin(q0)*sin(q2 + q3 + q4) - cos(q0)*sin(q1)*cos(q2 + q3 + q4)) + l6*(cos(q0)*sin(q1)*(cos(q2) + cos(q2 + q3)) - sin(q0)*(sin(q2) + sin(q2 + q3)));
+    // p->operator()(0) = - l3*(side)*sin(q0) - l4*(side)*sin(q0)*cos(q1) - l2*cos(q0) - l7*cos(q0)*sin(q2 + q3 + q4) - l5*cos(q0)*(sin(q2) + sin(q2 + q3)) - l6*(sin(q0)*sin(q1)*(cos(q2 + q3) + cos(q2))) - l7*sin(q0)*sin(q1)*cos(q2 + q3 + q4);
+    p->operator()(0) =  - l2*cos(q0) - l3*(side)*sin(q0) - l4*(side)*sin(q0)*cos(q1) - l5*(sin(q0)*sin(q1)*cos(q2) + sin(q2)*cos(q0)) - l6*(-sin(q0)*sin(q1)*cos(q2 + q3) + cos(q0)*sin(q2  + q3)) - l7*(sin(q0)*sin(q1)*cos(q2 + q3 + q4) + cos(q0)*sin(q2 + q3 + q4));
+    // p->operator()(1) = l3*(side)*cos(q0) + l4*(side)*cos(q0)*cos(q1) - l2*sin(q0) - l7*(sin(q0)*sin(q2 + q3 + q4) - cos(q0)*sin(q1)*cos(q2 + q3 + q4)) + l6*(cos(q0)*sin(q1)*(cos(q2) + cos(q2 + q3)) - sin(q0)*(sin(q2) + sin(q2 + q3)));
+    p->operator()(1) =  - l2*sin(q0) + l3*(side)*cos(q0) + l4*(side)*cos(q0)*cos(q1) - l5*(sin(q0)*sin(q2) - sin(q1)*cos(q0)*cos(q2)) - l6*(sin(q0)*sin(q2 + q3) - sin(q1)*cos(q0)*cos(q2 + q3)) - l7*(sin(q0)*sin(q2 + q3 + q4) - cos(q0)*sin(q1)*cos(q2 + q3 + q4));
     p->operator()(2) = l4*(side)*sin(q1) - cos(q1)*(l5*cos(q2) + l6*cos(q2 + q3) + l7*cos(q2 + q3 + q4)) - l1;
    }
 }
@@ -349,9 +356,12 @@ void computeHeelToePosition(Biped& _biped, Vec5<double>& q, Vec3<double>* toe, V
     double q3 = q(3);
     double q4 = q(4);
 
-    double x = -l3*sin(q0)*cos(q1) - l5*(sin(q0)*sin(q1)*cos(q2) + sin(q2)*cos(q0)) - l6*((-sin(q0)*sin(q1)*sin(q2) + cos(q0)*cos(q2))*sin(q3) + (sin(q0)*sin(q1)*cos(q2) + sin(q2)*cos(q0))*cos(q3)) - l7*(((-sin(q0)*sin(q1)*sin(q2) + cos(q0)*cos(q2))*sin(q3) + (sin(q0)*sin(q1)*cos(q2) + sin(q2)*cos(q0))*cos(q3))*cos(q4) + ((-sin(q0)*sin(q1)*sin(q2) + cos(q0)*cos(q2))*cos(q3) - (sin(q0)*sin(q1)*cos(q2) + sin(q2)*cos(q0))*sin(q3))*sin(q4));
-    double y = l1 + l3*cos(q0)*cos(q1) - l5*(sin(q0)*sin(q2) - sin(q1)*cos(q0)*cos(q2)) - l6*((sin(q0)*sin(q2) - sin(q1)*cos(q0)*cos(q2))*cos(q3) + (sin(q0)*cos(q2) + sin(q1)*sin(q2)*cos(q0))*sin(q3)) - l7*((-(sin(q0)*sin(q2) - sin(q1)*cos(q0)*cos(q2))*sin(q3) + (sin(q0)*cos(q2) + sin(q1)*sin(q2)*cos(q0))*cos(q3))*sin(q4) + ((sin(q0)*sin(q2) - sin(q1)*cos(q0)*cos(q2))*cos(q3) + (sin(q0)*cos(q2) + sin(q1)*sin(q2)*cos(q0))*sin(q3))*cos(q4));
-    double z = l2 + l3*sin(q1) - l5*cos(q1)*cos(q2) - l6*(-sin(q2)*sin(q3)*cos(q1) + cos(q1)*cos(q2)*cos(q3)) - l7*((-sin(q2)*sin(q3)*cos(q1) + cos(q1)*cos(q2)*cos(q3))*cos(q4) + (-sin(q2)*cos(q1)*cos(q3) - sin(q3)*cos(q1)*cos(q2))*sin(q4));
+    // double x = -l3*sin(q0)*cos(q1) - l5*(sin(q0)*sin(q1)*cos(q2) + sin(q2)*cos(q0)) - l6*((-sin(q0)*sin(q1)*sin(q2) + cos(q0)*cos(q2))*sin(q3) + (sin(q0)*sin(q1)*cos(q2) + sin(q2)*cos(q0))*cos(q3)) - l7*(((-sin(q0)*sin(q1)*sin(q2) + cos(q0)*cos(q2))*sin(q3) + (sin(q0)*sin(q1)*cos(q2) + sin(q2)*cos(q0))*cos(q3))*cos(q4) + ((-sin(q0)*sin(q1)*sin(q2) + cos(q0)*cos(q2))*cos(q3) - (sin(q0)*sin(q1)*cos(q2) + sin(q2)*cos(q0))*sin(q3))*sin(q4));
+    double x = -l3*sin(q0)*cos(q1) - l5*(sin(q0)*sin(q1)*cos(q2) + sin(q2)*cos(q0)) - l6*(-sin(q0)*sin(q1)*cos(q2 + q3) + cos(q0)*sin(q2  + q3)) - l7*(sin(q0)*sin(q1)*cos(q2 + q3 + q4) + cos(q0)*sin(q2 + q3 + q4));
+    // double y = l1 + l3*cos(q0)*cos(q1) - l5*(sin(q0)*sin(q2) - sin(q1)*cos(q0)*cos(q2)) - l6*((sin(q0)*sin(q2) - sin(q1)*cos(q0)*cos(q2))*cos(q3) + (sin(q0)*cos(q2) + sin(q1)*sin(q2)*cos(q0))*sin(q3)) - l7*((-(sin(q0)*sin(q2) - sin(q1)*cos(q0)*cos(q2))*sin(q3) + (sin(q0)*cos(q2) + sin(q1)*sin(q2)*cos(q0))*cos(q3))*sin(q4) + ((sin(q0)*sin(q2) - sin(q1)*cos(q0)*cos(q2))*cos(q3) + (sin(q0)*cos(q2) + sin(q1)*sin(q2)*cos(q0))*sin(q3))*cos(q4));
+    double y = l1 + l3*cos(q0)*cos(q1) - l5*(sin(q0)*sin(q2) - sin(q1)*cos(q0)*cos(q2)) - l6*(sin(q0)*sin(q2 + q3) - sin(q1)*cos(q0)*cos(q2 + q3)) - l7*(sin(q0)*sin(q2 + q3 + q4) - cos(q0)*sin(q1)*cos(q2 + q3 + q4));
+    // double z = l2 + l3*sin(q1) - l5*cos(q1)*cos(q2) - l6*(-sin(q2)*sin(q3)*cos(q1) + cos(q1)*cos(q2)*cos(q3)) - l7*((-sin(q2)*sin(q3)*cos(q1) + cos(q1)*cos(q2)*cos(q3))*cos(q4) + (-sin(q2)*cos(q1)*cos(q3) - sin(q3)*cos(q1)*cos(q2))*sin(q4));
+    double z = l2 + l3*sin(q1) - cos(q1)*(l5*cos(q2) + l6*cos(q2 + q3) + l7*cos(q2 + q3 + q4)) + 0.01;
 
     toe->operator()(0) = x - l8*(sin(q0)*sin(q1)*sin(q2 + q3 + q4) - cos(q0)*cos(q2 + q3 + q4));
     toe->operator()(1) = y + l8*(sin(q0)*cos(q2 + q3 + q4) + sin(q1)*sin(q2 + q3 + q4)*cos(q0));

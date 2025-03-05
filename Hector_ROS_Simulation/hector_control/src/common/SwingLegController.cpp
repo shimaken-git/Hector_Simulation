@@ -174,7 +174,11 @@ void swingLegController::computeFootDesiredPosition(){
             // Eigen::Vector3d hipWidthOffSet = {-0.015, side*-0.057, 0.0}; // TODO: sync with Biped.h
             Eigen::Vector3d hipWidthOffSet = data->_biped->getHipYawLocation(foot);
             hipWidthOffSet(2) = 0.0;
-            pDesFootWorld[2] -=0.03;
+#ifdef debug
+            pDesFootWorld[2] -=0.0;
+#else
+            pDesFootWorld[2] -=0.02;
+#endif
             pFoot_b[foot] = seResult.rBody * (pDesFootWorld - seResult.position) - hipWidthOffSet ;  //原点を股関節に変換
             // vFoot_b[foot] = seResult.rBody * (vDesFootWorld*0 - seResult.vWorld);             
             vFoot_b[foot] = seResult.rBody * (vDesFootWorld - seResult.vWorld);             
@@ -204,17 +208,11 @@ void swingLegController::setDesiredJointState(){
             // std::cout << data->_legController->commands[leg].qDes << std::endl;
             data->_legController->commands[leg].qdDes = Eigen::Matrix<double, 5, 1>::Zero();
 #ifdef BEAR_REAL
-#ifdef TORQUE_RESTRICT
-            Eigen::VectorXd kpgains(5);
-            kpgains << 2, 2, 2, 2, 2;
-            Eigen::VectorXd kdgains(5);
-            kdgains << 0.1, 0.1, 0.1, 0.1, 0.1;
-#else
+// #ifdef TORQUE_RESTRICT
             Eigen::VectorXd kpgains(5);
             kpgains << 20, 20, 20, 20, 20;
             Eigen::VectorXd kdgains(5);
             kdgains << 0.5, 0.5, 0.5, 0.5, 0.5;
-#endif
 #else
             Eigen::VectorXd kpgains(5);
             kpgains << 30, 30, 30, 30, 20;

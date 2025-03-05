@@ -1,5 +1,17 @@
 <?xml version="1.0" ?>
 <robot name="bear_dfm_test" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <material name="gray">
+        <color rgba="0.2 0.2 0.2 1.0"/>
+    </material>
+    <material name="gray2">
+        <color rgba="0.8 0.8 0.8 1.0"/>
+    </material>
+    <material name="black">
+        <color rgba="0 0 0 0.7"/>
+    </material>
+    <material name="white">
+        <color rgba="1 1 1 0.7"/>
+    </material>
 
     <link name="base">
         <visual>
@@ -15,6 +27,7 @@
             <geometry>
                 <box size="0.05 0.05 0.03"/>
             </geometry>
+            <material name="gray"/>
         </visual>
         <inertial>
             <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -31,13 +44,14 @@
     </joint>
     <link name="arm1">
         <visual>
-            <origin rpy="0 0 0" xzy="0 0 0"/>
+            <origin rpy="0 0 0" xyz="0.07 0 0"/>
             <geometry>
-                <box size="0.1 0.01 0.005"/>
+                <box size="0.15 0.01 0.005"/>
             </geometry>
+            <material name="gray2"/>
         </visual>
         <inertial>
-            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <origin rpy="0 0 0" xyz="0.07 0 0"/>
             <mass value="0.01"/>
             <inertia ixx="2193585.402e-9" 
                      ixy="-31.775e-9" iyy="412257.108e-9" 
@@ -58,6 +72,7 @@
             <geometry>
                 <box size="0.05 0.05 0.03"/>
             </geometry>
+            <material name="gray"/>
         </visual>
         <inertial>
             <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -74,10 +89,11 @@
     </joint>
     <link name="arm2">
         <visual>
-            <origin rpy="0 0 0" xzy="0 0 0"/>
+            <origin rpy="0 0 0" xyz="0.07 0 0"/>
             <geometry>
-                <box size="0.1 0.01 0.005"/>
+                <box size="0.15 0.01 0.005"/>
             </geometry>
+            <material name="gray2"/>
         </visual>
         <inertial>
             <origin rpy="0 0 0" xyz="0 0 0"/>

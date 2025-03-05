@@ -6,16 +6,19 @@ from trajectory_msgs.msg import JointTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
 from sensor_msgs.msg import JointState
 from sensor_msgs.msg import Joy
+from std_msgs.msg import Float64
 from std_msgs.msg import String
 import numpy as np
 import time
 import sys
 import math
 from scipy.spatial.transform import Rotation
+from westwood_legged_msgs.msg import MotorCmd
+from westwood_legged_msgs.msg import MotorState
 
 args = sys.argv
 
-pub = rospy.Publisher('/lambda_leg/command', JointTrajectory, queue_size=1)
+pub = []
 
 command = ""
 positions = {}   #dict
@@ -24,6 +27,8 @@ indexlist = {}
 
 bfr_button6 = 0
 bfr_button7 = 0
+
+motorState = []
 
 i = 0
 for n in joint_names:
@@ -48,23 +53,36 @@ t_pos_l = [
     np.matrix([[0.05], [-0.1], [-0.32]]),
 ]
 
+limit_max = [0.2, 0.3, 1.5, 2.5, 1.5, 0.2, 0.3, 1.5, 2.5, 1.5]
+limit_min = [-0.2, -0.3, -1.5, -0.05, -1.5, -0.2, -0.3, -1.5, -0.05, -1.5]
+
+def joint_data_check(j_data):
+    global limit_max, limit_min
+    res = True
+    for i, j in enumerate(j_data):
+        if j > limit_max[i] or limit_min[i] > j:
+            res = False
+    return res
+
 def joint_publish(joint_l, joint_r, sec, nsec):
     global idxlist, pub, joint_names
 
+    mtcmd = MotorCmd()
+    mtcmd.dq = 0.0
+    mtcmd.tau = 0.0
+    mtcmd.Kp = 20.0
+    mtcmd.Kd = 2.0
+
     joint_ = joint_l + joint_r
-    tj = JointTrajectory()
-    tj.joint_names = ['L_calf_joint', 'L_hip2_joint', 'L_hip_joint', 'L_thigh_joint', 'L_toe_joint', 'R_calf_joint', 'R_hip2_joint', 'R_hip_joint', 'R_thigh_joint', 'R_toe_joint']
-    pnt = JointTrajectoryPoint()
-    pnt.positions = [0.0] * 10
-    for i, nm in enumerate(tj.joint_names):
-        pnt.positions[i] = joint_[indexlist[nm]]
-    for i, j in enumerate(joint_):
-        print(i, j)
-    for i, p in enumerate(pnt.positions):
-        print(i, p, tj.joint_names[i])
-    pnt.time_from_start = rospy.Duration(sec, nsec)
-    tj.points.append(pnt)
-    pub.publish(tj)
+    if joint_data_check(joint_):
+        for a in range(10):
+            mtcmd.q = joint_[a]
+            print(joint_[a], mtcmd.q)
+            pub[a].publish(mtcmd)
+    else:
+        print("Joint Limit Over.")
+        for i, a in enumerate(joint_):
+            print(limit_max[i], ">", a, ">", limit_min[i])
 
 def leg_pub(tgt_left_z, tgt_right_z, sec, nsec):
     tgt_y = 0.0
@@ -145,6 +163,36 @@ def jointCb(data):
     # print ("velocity", data.velocity)
     # print ("effort", data.effort)
 
+def motorState0Cb(msg):
+    motorState[0] = msg
+
+def motorState1Cb(msg):
+    motorState[1] = msg
+
+def motorState2Cb(msg):
+    motorState[2] = msg
+
+def motorState3Cb(msg):
+    motorState[3] = msg
+
+def motorState4Cb(msg):
+    motorState[4] = msg
+
+def motorState5Cb(msg):
+    motorState[5] = msg
+
+def motorState6Cb(msg):
+    motorState[6] = msg
+
+def motorState7Cb(msg):
+    motorState[7] = msg
+
+def motorState8Cb(msg):
+    motorState[8] = msg
+
+def motorState9Cb(msg):
+    motorState[9] = msg
+
 
 def commandCb(data):
     global command
@@ -153,344 +201,207 @@ def commandCb(data):
 
 def leg_control():
     global command, pub
-    rospy.init_node('lambda_leg_sample')
-    pub = rospy.Publisher('/lambda_leg/command', JointTrajectory, queue_size=1)
+    rospy.init_node('lambda_leg_sample2')
+    pub.append(rospy.Publisher('/lambda_leg/L_hip_controller/command', MotorCmd, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/L_hip2_controller/command', MotorCmd, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/L_thigh_controller/command', MotorCmd, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/L_calf_controller/command', MotorCmd, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/L_toe_controller/command', MotorCmd, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/R_hip_controller/command', MotorCmd, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/R_hip2_controller/command', MotorCmd, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/R_thigh_controller/command', MotorCmd, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/R_calf_controller/command', MotorCmd, queue_size=1))
+    pub.append(rospy.Publisher('/lambda_leg/R_toe_controller/command', MotorCmd, queue_size=1))
     rospy.Subscriber("joint_states", JointState, jointCb)
     rospy.Subscriber("leg_command", String, commandCb)
     rospy.Subscriber("joy", Joy, joyCb)
-    
-    r = rospy.Rate(10)  # 10Hz
+    for i in range(10):
+        motorState.append(MotorState())
+    rospy.Subscriber("/lambda_leg/L_hip_controller/state", MotorState, motorState0Cb)
+    rospy.Subscriber("/lambda_leg/L_hip2_controller/state", MotorState, motorState1Cb)
+    rospy.Subscriber("/lambda_leg/L_thigh_controller/state", MotorState, motorState2Cb)
+    rospy.Subscriber("/lambda_leg/L_calf_controller/state", MotorState, motorState3Cb)
+    rospy.Subscriber("/lambda_leg/L_toe_controller/state", MotorState, motorState4Cb)
+    rospy.Subscriber("/lambda_leg/R_hip_controller/state", MotorState, motorState5Cb)
+    rospy.Subscriber("/lambda_leg/R_hip2_controller/state", MotorState, motorState6Cb)
+    rospy.Subscriber("/lambda_leg/R_thigh_controller/state", MotorState, motorState7Cb)
+    rospy.Subscriber("/lambda_leg/R_calf_controller/state", MotorState, motorState8Cb)
+    rospy.Subscriber("/lambda_leg/R_toe_controller/state", MotorState, motorState9Cb)
+
+    # use command'jacob'
+    # fb_coef = -30.0
+    fb_coef = 0.0
+    jacob_first = True
+    target_height_left = 0
+    target_height_right = 0
+    exec_cmd = ""
+    step_height = 0.0
+    dt = 0.0
+    phase = 0.0
+
+    r = rospy.Rate(100)  # 100Hz
     while not rospy.is_shutdown():
         if command == "zero" :
             print("command", command)
-            tj = JointTrajectory()
-            # tj.joint_names = ["L_hip_joint", "L_hip2_joint", "L_thigh_joint", "L_calf_joint", "L_toe_joint", "R_hip_joint", "R_hip2_joint", "R_thigh_joint", "R_calf_joint", "R_toe_joint"]
-            tj.joint_names = ['L_calf_joint', 'L_hip2_joint', 'L_hip_joint', 'L_thigh_joint', 'L_toe_joint', 'R_calf_joint', 'R_hip2_joint', 'R_hip_joint', 'R_thigh_joint', 'R_toe_joint']
-            pnt = JointTrajectoryPoint()
-            pnt.positions = [0,0,0,0,0,0,0,0,0,0]
-            # pnt.velocities = [0,0,0,0,0,0,0,0,0,0]
-            # pnt.accelerations = [0,0,0,0,0,0,0,0,0,0]
-            # pnt.effort = [0,0,0,0,0,0,0,0,0,0]
-            pnt.time_from_start = rospy.Duration(1, 0)
-            tj.points.append(pnt)
-            pub.publish(tj)
+            mtcmd = MotorCmd()
+            mtcmd.q = 0.0
+            mtcmd.dq = 0.0
+            mtcmd.tau = 0.0
+            mtcmd.Kp = 10.0
+            mtcmd.Kd = 0.5
+            for i in range(10):
+                pub[i].publish(mtcmd)
+            command = ""
+            jacob_first = True
+        elif command == "torqueoff" :
+            print("command", command)
+            mtcmd = MotorCmd()
+            mtcmd.q = 0.0
+            mtcmd.dq = 0.0
+            mtcmd.tau = 0.0
+            mtcmd.Kp = 0.0
+            mtcmd.Kd = 0.0
+            for i in range(10):
+                mtcmd.q = motorState[i].q
+                pub[i].publish(mtcmd)
+            command = ""
+            jacob_first = True
+        elif command == "test1" :
+            print("command", command)
+            mtcmd = MotorCmd()
+            mtcmd.q = 0.0
+            mtcmd.dq = 0.0
+            mtcmd.tau = 0.0
+            mtcmd.Kp = 6.0
+            mtcmd.Kd = 0.5
+            pub[0].publish(mtcmd)
+            command = ""
+        elif command == "test2" :
+            print("command", command)
+            mtcmd = MotorCmd()
+            mtcmd.q = 0.0
+            mtcmd.dq = 0.0
+            mtcmd.tau = 0.0
+            mtcmd.Kp = 6.0
+            mtcmd.Kd = 0.5
+            pub[3].publish(mtcmd)
+            pub[0].publish(mtcmd)
             command = ""
 
         elif command == "stand" :   # set stand pose    > stand y z pitch yw  [-0.1 > z > -0.32]
             command = ""
-            leg_pub(-0.3, -0.3, 1, 0)
+            leg_pub(-0.25, -0.25, 1, 0)
 
         elif command == "left" :   # set stand pose    > stand y z pitch yw  [-0.1 > z > -0.32]
-            command = ""
-            leg_pub(-0.2, -0.3, 0, 50000000)
-            time.sleep(0.2)
-            leg_pub(-0.3, -0.3, 0, 50000000)
+            if exec_cmd == "":
+                exec_cmd = command
+                command = ""
+                step_height = 0.05
+                dt = 2.0 / 30.0
+                phase = 0.0
 
         elif command == "right" :   # set stand pose    > stand y z pitch yw  [-0.1 > z > -0.32]
+            if exec_cmd == "":
+                exec_cmd = command
+                command = ""
+                step_height = 0.05
+                dt = 2.0 / 30.0
+                phase = 0.0
+
+        elif command == "jacob" :
+            diff_left = 0.0
+            diff_right = 0.0
             command = ""
-            leg_pub(-0.3, -0.2, 0, 50000000)
-            time.sleep(0.2)
-            leg_pub(-0.3, -0.3, 0, 50000000)
+            fx = 0.0
+            fy = 0.0
+            fz = -60.0
+            my = 0.0
+            mz = 0.0
 
-        elif command == "standrpy" :   # set stand pose with roll pitch and yaw    > standrpy y z roll pitch yaw [-0.1 > z > -0.32]
-            # if len(inp_list) == 6 and float(inp_list[2]) < -0.1:
-            # tgt_y = float(inp_list[1])
-            # tgt_z = float(inp_list[2])
-            # tgt_r = float(inp_list[3])
-            # tgt_p = float(inp_list[4])
-            # tgt_yw = float(inp_list[5])
-            tgt_y = 0.0
-            tgt_z = 0.0
-            tgt_r = 0.0
-            tgt_p = 0.0
-            tgt_yw = 0.0
             ljoint, lpoints, lrots, rjoint, rpoints, rrots = get_present_pos()
-            print("left")
-            print(lpoints[4])
-            rot = Rotation.from_matrix(lrots[4])
-            print(rot.as_matrix())
-            print(rot.as_euler('xyz', degrees=True))
-            print("right")
-            print(rpoints[4])
-            rot = Rotation.from_matrix(rrots[4])
-            print(rot.as_matrix())
-            print(rot.as_euler('xyz', degrees=True))
-            print("tgt_r", tgt_r)
-            print("tgt_p", tgt_p)
-            print("tgt_yw", tgt_yw)
+            lpoints, lrots = dk(ljoint)
+            rpoints, rrots = dk(rjoint)
+            if jacob_first:
+                target_height_left = -lpoints[5][2, 0]
+                target_height_right = -rpoints[5][2, 0]
+                print("target hight left :", target_height_left)
+                print("target hight right :", target_height_right)
+                jacob_first = False
+            else:
+                diff_left = target_height_left + lpoints[5][2, 0]
+                diff_right = target_height_right + rpoints[5][2, 0]
+                print("diff", diff_left, diff_right)
+            fa = diff_left * fb_coef
+            print("fa:", fa, diff_left, fb_coef)
+            ui = np.matrix([[fx, fy, fz + fa, my, mz]]).transpose()
+            ja = jacobian(lpoints, lrots)
+            ltau = ja.transpose() * ui
+            fa = diff_right * fb_coef
+            print("fa:", fa, diff_right, fb_coef)
+            ui = np.matrix([[fx, fy, fz + fa, my, mz]]).transpose()
+            ja = jacobian(rpoints, rrots)
+            rtau = ja.transpose() * ui
+            print("ltau", ltau)
+            print("rtau", rtau)
+            i = 0
+            mtcmd = MotorCmd()
+            mtcmd.q = 0.0
+            mtcmd.dq = 0.0
+            mtcmd.tau = 0.0
+            mtcmd.Kp = 0.0
+            mtcmd.Kd = 0.0
+            for t in ltau :
+                mtcmd.tau = t[0,0]
+                pub[i].publish(mtcmd)
+                print (mtcmd.tau)
+                i += 1
+            for t in rtau :
+                mtcmd.tau = t[0,0]
+                pub[i].publish(mtcmd)
+                print (mtcmd.tau)
+                i += 1
 
-            t_roll = np.matrix([[1, 0, 0], \
-                        [0, np.cos(tgt_r), -np.sin(tgt_r)], \
-                        [0, np.sin(tgt_r), np.cos(tgt_r)]])
-            t_pitch = np.matrix([[np.cos(tgt_p), 0, np.sin(tgt_p)], \
-                        [0, 1, 0], \
-                        [-np.sin(tgt_p), 0, np.cos(tgt_p)]])
-            t_yaw = np.matrix([[np.cos(tgt_yw), -np.sin(tgt_yw), 0], \
-                        [np.sin(tgt_yw), np.cos(tgt_yw), 0], \
-                        [0, 0, 1]])
-            body_pos_l = np.matrix([[0.0], [0.053], [0.0]])
-            t_pos = np.matrix([[0.0], [0.053+tgt_y], [tgt_z]])
-            print("left  : ", t_pos)
-            t_pos = t_yaw.T * t_pitch.T * t_roll.T * t_pos
-            t_pos = t_pos - body_pos_l
-            print("left roll  : ", t_pos)
-            t_rot = t_yaw * t_pitch.T
-            rot = Rotation.from_matrix(t_rot)
-            print(rot.as_euler('xyz'))
-            joint_l, res_l = ik_jac(ljoint, t_pos, t_rot)
-
-            body_pos_r = np.matrix([[0.0], [-0.053], [0.0]])
-            t_pos = np.matrix([[0.0], [-0.053-tgt_y], [tgt_z]])
-            print("right : ", t_pos)
-            t_pos = t_yaw.T * t_pitch.T * t_roll.T * t_pos
-            t_pos = t_pos - body_pos_r
-            print("right pitch : ", t_pos)
-            t_rot = t_yaw * t_pitch.T
-            rot = Rotation.from_matrix(t_rot)
-            print(rot.as_euler('xyz'))
-            joint_r, res_r = ik_jac(rjoint, t_pos, t_rot)
-
-            joint_publish(joint_l, joint_r)
-
-            time.sleep(1.0)
-            ljoint, lpoints, lrots, rjoint, rpoints, rrots = get_present_pos()
-            print("left")
-            print(lpoints[4])
-            rot = Rotation.from_matrix(lrots[4])
-            print(rot.as_matrix())
-            print(rot.as_euler('xyz', degrees=True))
-            print(rot.as_euler('xyz'))
-
-            print("right")
-            print(rpoints[4])
-            rot = Rotation.from_matrix(rrots[4])
-            print(rot.as_matrix())
-            print(rot.as_euler('xyz', degrees=True))
-            print(rot.as_euler('xyz'))
-        
-        inp_list = ["none", 0, 0, 0, 0]
-        if inp_list[0] == "bending" :    # move stand pose    > bending y z time [-0.1 > z > -0.32]
-            if len(inp_list) == 4 and float(inp_list[2]) < -0.1:
-                tgt_y = float(inp_list[1])
-                tgt_z = float(inp_list[2])
-                times = int(inp_list[3])
-                if times < 1:
-                    times = 50
-                ljoint, lpoints, lrots, rjoint, rpoints, rrots = get_present_pos()
-                print("left")
-                print(lpoints[4])
-                print(lrots[4])
-
-                print("right")
-                print(rpoints[4])
-                print(rrots[4])
-
-                t_pos = np.matrix([[0.0], [tgt_y], [tgt_z]])
-                t_rot_l = np.matrix([[np.cos(0), 0, np.sin(0)], \
-                            [0, 1, 0], \
-                            [-np.sin(0), 0, np.cos(0)]])
-                dt_pos_l = lpoints[4]
-                joint_l = ljoint
-                d_pos_l = (t_pos - lpoints[4]) / times
-
-                t_pos = np.matrix([[0.0], [-tgt_y], [tgt_z]])
-                t_rot_r = np.matrix([[np.cos(0), 0, np.sin(0)], \
-                            [0, 1, 0], \
-                            [-np.sin(0), 0, np.cos(0)]])
-                dt_pos_r = rpoints[4]
-                joint_r = rjoint
-                d_pos_r = (t_pos - rpoints[4]) / times
-                for i in range(times):
-                    dt_pos_l = dt_pos_l + d_pos_l 
-                    joint_l, res_l = ik_jac(joint_l, dt_pos_l, t_rot_l)
-                    dt_pos_r = dt_pos_r + d_pos_r 
-                    joint_r, res_r = ik_jac(joint_r, dt_pos_r, t_rot_r)
-
-                    #publish
-                    time.sleep(0.01)
-
-        elif inp_list[0] == "step" :    # step movement    > step y z cycle steps [-0.1 > z > -0.32]
-            if len(inp_list) == 5 and float(inp_list[2]) < -0.1:
-                tgt_y = float(inp_list[1])
-                tgt_z = float(inp_list[2])
-                times = int(inp_list[3])
-                steps = int(inp_list[4])
-                if times < 1:
-                    times = 50
-                if steps < 1:
-                    steps = 1
-
-                ljoint, lpoints, lrots, rjoint, rpoints, rrots = get_present_pos()
-
-                btm_pos_l = lpoints[4]
-                btm_pos_r = rpoints[4]
-
-                top_pos_l = np.matrix([[0.0], [tgt_y], [tgt_z]])
-                t_rot_l = np.matrix([[np.cos(0), 0, np.sin(0)], \
-                            [0, 1, 0], \
-                            [-np.sin(0), 0, np.cos(0)]])
-                joint_l = ljoint
-
-                top_pos_r = np.matrix([[0.0], [-tgt_y], [tgt_z]])
-                t_rot_r = np.matrix([[np.cos(0), 0, np.sin(0)], \
-                            [0, 1, 0], \
-                            [-np.sin(0), 0, np.cos(0)]])
-                joint_r = rjoint
-
-                for s in range(steps):
-                    side = s % 2
-                    for ud in range(2):    # ud == 0 -> up  ud == 1 -> down
-                        if ud == 0 :
-                            dt_pos_l = btm_pos_l
-                            dt_pos_r = btm_pos_r
-                            tgt_pos_l = top_pos_l
-                            tgt_pos_r = top_pos_r
-                        else :
-                            dt_pos_l = top_pos_l
-                            dt_pos_r = top_pos_r
-                            tgt_pos_l = btm_pos_l
-                            tgt_pos_r = btm_pos_r
-                        d_pos_l = (tgt_pos_l - dt_pos_l) / times
-                        d_pos_r = (tgt_pos_r - dt_pos_r) / times
-                        print("step", s, " ud", ud)
-                        for i in range(times):
-                            if side == 0:
-                                dt_pos_l = dt_pos_l + d_pos_l 
-                                joint_l, res_l = ik_jac(joint_l, dt_pos_l, t_rot_l)
-                                print(i, "left", dt_pos_l[2])
-                            else :
-                                dt_pos_r = dt_pos_r + d_pos_r 
-                                joint_r, res_r = ik_jac(joint_r, dt_pos_r, t_rot_r)
-                                print(i, "right", dt_pos_r[2])
-
-                            #publish
-
-                            time.sleep(0.01)
-
-        elif inp_list[0] == "swing" :    # move swing    > swing width cycle steps
-            if len(inp_list) == 4:
-                width = float(inp_list[1])
-                times = int(inp_list[2])
-                steps = int(inp_list[3])
-                if times < 1:
-                    times = 50
-                if steps < 1:
-                    steps = 1
-
-                ljoint, lpoints, lrots, rjoint, rpoints, rrots = get_present_pos()
-
-                neutral_pos_l = lpoints[4]
-                neutral_pos_r = rpoints[4]
-
-                left_inc = np.matrix([[0], [width], [0]])   #左振り増分
-                right_inc = np.matrix([[0], [-width], [0]])  #右振り増分
-
-                t_rot_l = np.matrix([[np.cos(0), 0, np.sin(0)], \
-                            [0, 1, 0], \
-                            [-np.sin(0), 0, np.cos(0)]])
-                joint_l = ljoint
-
-                t_rot_r = np.matrix([[np.cos(0), 0, np.sin(0)], \
-                            [0, 1, 0], \
-                            [-np.sin(0), 0, np.cos(0)]])
-                joint_r = rjoint
-
-                for s in range(steps):
-                    lr = s % 2    # lr == 0 -> left  lr == 1 -> right
-                    for oi in range(2):    # oi == 0 -> outbound  oi == 1 -> inbound
-                        if lr == 0 :
-                            width_inc = left_inc
-                        else :
-                            width_inc = right_inc
-                        if oi == 0 :
-                            dt_pos_l = neutral_pos_l
-                            dt_pos_r = neutral_pos_r
-                            tgt_pos_l = neutral_pos_l + width_inc
-                            tgt_pos_r = neutral_pos_r + width_inc
-                        else :
-                            dt_pos_l = neutral_pos_l + width_inc
-                            dt_pos_r = neutral_pos_r + width_inc
-                            tgt_pos_l = neutral_pos_l
-                            tgt_pos_r = neutral_pos_r
-                        d_pos_l = (tgt_pos_l - dt_pos_l) / times
-                        d_pos_r = (tgt_pos_r - dt_pos_r) / times
-                        print("step", s, " lr", lr)
-                        for i in range(times):
-                            dt_pos_l = dt_pos_l + d_pos_l 
-                            joint_l, res_l = ik_jac(joint_l, dt_pos_l, t_rot_l)
-                            print(i, "left", dt_pos_l[1])
-                            dt_pos_r = dt_pos_r + d_pos_r 
-                            joint_r, res_r = ik_jac(joint_r, dt_pos_r, t_rot_r)
-                            print(i, "right", dt_pos_r[1])
-
-                            #publish
-
-                            time.sleep(0.01)
-
-        elif inp_list[0] == "stroke" :    # move stroke    > stroke stroke cycle steps
-            if len(inp_list) == 4:
-                stroke = float(inp_list[1])
-                times = int(inp_list[2])
-                steps = int(inp_list[3])
-                if times < 1:
-                    times = 50
-                if steps < 1:
-                    steps = 1
-
-                ljoint, lpoints, lrots, rjoint, rpoints, rrots = get_present_pos()
-
-                neutral_pos_l = lpoints[4]
-                neutral_pos_r = rpoints[4]
-
-                front_inc = np.matrix([[stroke], [0], [0]])   #前振り増分
-                back_inc = np.matrix([[-stroke], [0], [0]])  #後ろ振り増分
-
-                t_rot_l = np.matrix([[np.cos(0), 0, np.sin(0)], \
-                            [0, 1, 0], \
-                            [-np.sin(0), 0, np.cos(0)]])
-                joint_l = ljoint
-
-                t_rot_r = np.matrix([[np.cos(0), 0, np.sin(0)], \
-                            [0, 1, 0], \
-                            [-np.sin(0), 0, np.cos(0)]])
-                joint_r = rjoint
-
-                for s in range(steps):
-                    lr = s % 2    # lr == 0 -> left  lr == 1 -> right
-                    for oi in range(2):    # oi == 0 -> outbound  oi == 1 -> inbound
-                        if lr == 0 :
-                            left_stroke_inc = front_inc
-                            right_stroke_inc = back_inc
-                        else :
-                            left_stroke_inc = back_inc
-                            right_stroke_inc = front_inc
-                        if oi == 0 :
-                            dt_pos_l = neutral_pos_l
-                            dt_pos_r = neutral_pos_r
-                            tgt_pos_l = neutral_pos_l + left_stroke_inc
-                            tgt_pos_r = neutral_pos_r + right_stroke_inc
-                        else :
-                            dt_pos_l = neutral_pos_l + left_stroke_inc
-                            dt_pos_r = neutral_pos_r + right_stroke_inc
-                            tgt_pos_l = neutral_pos_l
-                            tgt_pos_r = neutral_pos_r
-                        d_pos_l = (tgt_pos_l - dt_pos_l) / times
-                        d_pos_r = (tgt_pos_r - dt_pos_r) / times
-                        print("step", s, " lr", lr)
-                        for i in range(times):
-                            dt_pos_l = dt_pos_l + d_pos_l 
-                            joint_l, res_l = ik_jac(joint_l, dt_pos_l, t_rot_l)
-                            print(i, "left", dt_pos_l[0])
-                            dt_pos_r = dt_pos_r + d_pos_r 
-                            joint_r, res_r = ik_jac(joint_r, dt_pos_r, t_rot_r)
-                            print(i, "right", dt_pos_r[0])
-
-                            #publish
-
-                            time.sleep(0.01)
-
-        elif inp_list[0] == "quit":
+        elif command == "torque" :
+            command = ""
+            i = 0
+            mtcmd = MotorCmd()
+            mtcmd.q = 0.0
+            mtcmd.dq = 0.0
+            mtcmd.tau = 0.0
+            mtcmd.Kp = 0.0
+            mtcmd.Kd = 0.0
+            tau = [0.0, 0.0, 0.0, -3.0, 0.0]
+            for i, t in enumerate(tau) :
+                mtcmd.q = motorState[i].q
+                mtcmd.tau = t
+                pub[i].publish(mtcmd)
+                print (i, motorState[i].q, mtcmd.tau)
+            for i, t in enumerate(tau, start=5) :
+                mtcmd.q = motorState[i].q
+                mtcmd.tau = t
+                pub[i].publish(mtcmd)
+                print (i, motorState[i].q, mtcmd.tau)
+        elif command == "quit":
             loop = False
+
+        if exec_cmd == "left":
+            phase += dt
+            phase_ = phase
+            if phase > 1.0:
+                phase_ = 2.0 - phase
+            print(phase_)
+            leg_pub(-0.3 + step_height * phase_, -0.3, 0, 50000000)
+            if phase >= 2.0:
+                exec_cmd = ""
+        elif exec_cmd == "right":
+            phase += dt
+            phase_ = phase
+            if phase > 1.0:
+                phase_ = 2.0 - phase
+            print(phase_)
+            leg_pub(-0.3, -0.3 + step_height * phase_, 0, 50000000)
+            if phase >= 2.0:
+                exec_cmd = ""
 
         r.sleep()
 

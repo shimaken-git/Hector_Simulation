@@ -6,10 +6,6 @@ FSMState_Passive::FSMState_Passive(ControlFSMData *data):
 void FSMState_Passive::enter()
 {
     _data->_legController->zeroCommand();
-    for(int i = 0; i < 2; i++)
-    {
-        _data->_legController->commands[i].kdJoint.diagonal()<< 5, 5, 5, 5, 5;
-    }
 
 }
 

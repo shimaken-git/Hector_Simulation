@@ -125,9 +125,9 @@ void BearIO::StateCallback(const sensor_msgs::Imu & msg)
     _highState.imu.quaternion[2] = msg.orientation.y;
     _highState.imu.quaternion[3] = msg.orientation.z;
 
-    _highState.imu.gyroscope[0] = msg.linear_acceleration.x;
-    _highState.imu.gyroscope[1] = msg.linear_acceleration.y;
-    _highState.imu.gyroscope[2] = msg.linear_acceleration.z;
+    _highState.imu.gyroscope[0] = msg.angular_velocity.x;
+    _highState.imu.gyroscope[1] = msg.angular_velocity.y;
+    _highState.imu.gyroscope[2] = msg.angular_velocity.z;
     // ROS_INFO("state callback %f %f %f %f", msg.orientation.w, msg.orientation.x, msg.orientation.y, msg.orientation.z);
 }
 
