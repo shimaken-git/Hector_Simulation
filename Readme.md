@@ -1,16 +1,8 @@
-# Hector Open-source Simulation Software in ROS
+# Clara is a bipedal robot developed as part of the Lambda Project. It is based on Hector.
 
-## HECTOR: Humanoid for Enhanced ConTrol and Open-source Research
-
-This branch contains the ROS+Gazebo simulation for the Hector humanoid robot. 
-
-For humanoid ROS model with arms use the ROS_Humanoid_Simulation branch.
+This branch provides a simulation environment with ROS and gazebo simulator, and a real-world environment with Westwood Robotics' Koala Bear actuator ROS driver.
 
 <img src="https://github.com/DRCL-USC/Hector_Simulation/blob/Matlab_Simulation/STL%20files/Hector_picture.jpg" width=50% height=50%>
-
-Introduction Video: https://youtu.be/NcW-NFwjMh0
-
-Video associated with preprint "Dynamic Loco-manipulation on HECTOR: Humanoid for Enhanced ConTrol and Open-source Research": https://youtu.be/-r0QoxQgshk
 
 ## Dependencies:
 * [Boost](http://www.boost.org) (version 1.5.4 or higher)
@@ -72,6 +64,20 @@ The robot should be standing on the ground
 * Use A or D to control robot turning 
 * Use J or L to control y direction speed
 
+### launch and run real-robot in real-world
+
+term1
+```
+roslaunch bear_actuator_dfm_ros bear_actuator_ros.launch
+```
+term2
+```
+roslaunch hector_description wwlambda_r2_rviz_dfm.launch
+```
+term3
+```
+rosrun hector_control hector_ctrl
+```
 ## Cite Us:
 Thank you for choosing our software for your research and development, we highly appreciate your citing our work:
 

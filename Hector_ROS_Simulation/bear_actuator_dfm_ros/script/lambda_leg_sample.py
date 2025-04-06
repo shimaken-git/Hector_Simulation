@@ -311,7 +311,7 @@ def leg_control():
         elif command == "jacob" :
             diff_left = 0.0
             diff_right = 0.0
-            command = ""
+            # command = ""
             fx = 0.0
             fy = 0.0
             fz = -60.0
@@ -351,11 +351,13 @@ def leg_control():
             mtcmd.Kp = 0.0
             mtcmd.Kd = 0.0
             for t in ltau :
+                mtcmd.q = motorState[i].q
                 mtcmd.tau = t[0,0]
                 pub[i].publish(mtcmd)
                 print (mtcmd.tau)
                 i += 1
             for t in rtau :
+                mtcmd.q = motorState[i].q
                 mtcmd.tau = t[0,0]
                 pub[i].publish(mtcmd)
                 print (mtcmd.tau)
