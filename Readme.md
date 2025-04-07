@@ -82,9 +82,10 @@ rosrun hector_control hector_ctrl
 
 ロボットのアクチュエータとして、westwood robotics Koala BEAR 及び Steadywin GIM4310-10 SHS driver を想定している。
 Koala BEARは専用のRS485インターフェイスドングルを使い、8Mbpsで接続、GIM4310-10はCANインターフェイスにて接続する。
+
 https://www.westwoodrobotics.io/bearseries/
 https://ja.aliexpress.com/item/1005004032853363.html
-file://robot.drawio
+https://github.com/shimaken-git/Hector_Simulation/blob/west-wood/robot.drawio
 
 ### CAN interface
 
