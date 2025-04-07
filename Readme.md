@@ -25,7 +25,6 @@ The current system environment is:
 
 * Ubuntu 20.04 + ROS Noetic* (recommended, tested stable) 
 
-
 ## Configuration:
 Use command to open .bashrc file:
 * `gedit ~/.bashrc`
@@ -78,6 +77,28 @@ term3
 ```
 rosrun hector_control hector_ctrl
 ```
+
+### Hardware configulation
+
+ロボットのアクチュエータとして、westwood robotics Koala BEAR 及び Steadywin GIM4310-10 SHS driver を想定している。
+Koala BEARは専用のRS485インターフェイスドングルを使い、8Mbpsで接続、GIM4310-10はCANインターフェイスにて接続する。
+https://www.westwoodrobotics.io/bearseries/
+https://ja.aliexpress.com/item/1005004032853363.html
+file://robot.drawio
+
+### CAN interface
+
+CANable アダプタを使用。
+https://www.amazon.co.jp/dp/B0CZS2V9RZ?ref_=ppx_hzsearch_conn_dt_b_fed_asin_title_1
+
+## Device setting
+70-candle-usb.rulesの"/home/XXXXX/can_program/canable_setting.sh"の部分を適宜修正
+'''
+cp can_interface/70-candle-usb.rulesを/etc/udev/rules.d/
+cp can_interface/canable_setting.sh /home/[your_name]/can_program/
+sudo udevadm control --reload
+'''
+
 ## Cite Us:
 Thank you for choosing our software for your research and development, we highly appreciate your citing our work:
 

@@ -1,0 +1,2 @@
+# uses OpenMoko VID
+ACTION=="add", SUBSYSTEMS=="usb", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="606f", MODE="660", GROUP="users", TAG+="uaccess", RUN+="/usr/bin/logger [udev] CANUSB detected - running canable_setting.sh!",RUN+="/home/XXXXX/can_program/canable_setting.sh"
