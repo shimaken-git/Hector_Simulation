@@ -9,7 +9,7 @@ bear_actuator_dfm_ros driverは複合関節に対応しています。複合関�
 hardware.yamlはアクチュエータ設定と関節設定を行います。
 #### actuator setting
 記述例
-'''
+```
 row_joint:
   joint1:              <= actuator name 関節設定で呼び出すアクチュエータ名
     ID: 1              <= actuator id アクチュエータ固有のID
@@ -21,11 +21,11 @@ row_joint:
     type: gim
     cal_rpm: -7        <= GIM actuator は起動時に原点出しが必要。原点探索時の回転速度をrpmで指定する。
     limit: -1.30       <= 原点探索点の角度　原点探索により基準出し点の角度　これにより原点設定を行う。
-'''
+```
 
 ### joint setting
 記述例
-'''
+```
 robot_joint:
   L_hip_joint:           <= 関節名　ros driver で使用する関節名
     joint:
@@ -44,11 +44,11 @@ robot_joint:
     limit_m_angle: -0.7
     protection_kd: 0.0
 
-'''
+```
 
 ### lambda_leg_bear_effort_controllers.yaml
 lambda_leg_bear_effort_controllers.yamlはros driver の設定を行う
-'''
+```
 lambda_leg:
     # Publish all joint states -----------------------------------
     joint_state_controller:
@@ -61,7 +61,7 @@ lambda_leg:
         joint: L_hip_joint                                         <= hardware.yamlで定義した関節名
         pid: {p: 100.0, i: 0.0, d: 5.0, i_clamp_min: -1.0, i_clamp_max: 1.0}  <= driver parameter 未実装
 
-'''
+```
 
 ## connection
 Koala Bear アクチュエータはBEAR専用RS485アダプタ(8Mbps)を使用。
@@ -72,21 +72,21 @@ GM4010 はCANインターフェイスを使用。
 ## Usage
 ### 立ち上げ
 term1
-'''
+```
 roslaunch bear_actuator_dfm_ros bear_actuator_ros 
-'''
+```
 term2
-'''
+```
 roslaunch bear_description wwlambda_r2_rviz_dfm.launch
-'''
+```
 
 #### command
 コマンドトピックによりトルクON/OFF　リセットなどを行うことができる
-'''
+```
 rostopic pub -1 /pwr_cmd std_msgs/String "data: 'on'"       <= torque ff
 rostopic pub -1 /pwr_cmd std_msgs/String "data: 'off'"      <= torque off
 rostopic pub -1 /pwr_cmd std_msgs/String "data: 'reset'"    <= reset
-'''
+```
 ドライバーが起動した時点で前アクチュエータはトルクゼロでトルクオン状態となります。
 GIMアクチュエータが含まれている場合は角度キャリブレーションを実行します。
 関節角度がhardware.yamlで指定した角度範囲を超えた場合、エラーとなり、以降のトルク指定は無視されます。
