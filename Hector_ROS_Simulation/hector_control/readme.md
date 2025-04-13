@@ -54,22 +54,25 @@ hector_simulationリポジトリではGazeboシミュレエータ上で動かす
 ### About Robot Setting
 ロボットの構造や制御設定はできるだけinclude/common/Biped.hに集約するようにしているが完全ではない。
 以下に注意点を示す。
-#### include/common/Biped.h
+#### robot setting
+###### include/common/Biped.h
 ロボットの構造や制御設定はできるだけここに集約している。ただし、完全ではない。
-- mass MPCの設定に使われている。
-    src/FSM/FSMState_Walking.cpp の FSMState_Walking::FSMState_Walking()
-    ```
-    Cmpc(0.001, 40, data->_biped->height, data->_biped->mass)
-    ```
-    Biped.h -> ConvexLocomotion::ConvexLocomotion() -> update_problem_data() -> solver_mpc() -> ct_ss_mats()　と最終的にct_ss_mats()にて適用される。
-- height MPCの設定に使われている(上述)、ここで設定が完結していない。
+###### mass
+ MPCの設定に使われている。
+src/FSM/FSMState_Walking.cpp の FSMState_Walking::FSMState_Walking()
+```
+Cmpc(0.001, 40, data->_biped->height, data->_biped->mass)
+```
+Biped.h -> ConvexLocomotion::ConvexLocomotion() -> update_problem_data() -> solver_mpc() -> ct_ss_mats()　と最終的にct_ss_mats()にて適用される。
+###### height
+MPCの設定に使われている(上述)、ここで設定が完結していない。
     - gazebo
         unitree_ros/unitree_gazebo/launch/wwlambda_rs.launch内でz値が指定されている
-- LegController.cpp
+###### jacobian
     src/common/LegController.cppのcomputeLegJacobianAndPosition()ではロボット構造値を独自で設定している
-- LegIk.cpp
+###### inverse kinematics
     src/common/LegIk.cppのcomputeIK_()では一部構造値をコード上で記述している。
-- footHeight 遊脚の足上げ高さ
+###### footHeight 遊脚の足上げ高さ
     include/common/SwingLegController.h
     ```
     #ifdef _LAMBDA_R2_
@@ -81,14 +84,14 @@ hector_simulationリポジトリではGazeboシミュレエータ上で動かす
     #endif
     ```
 ### About MPC Setting
-- MPC Weights
+###### MPC Weights
     src/ConvexMPC/ConvexMPCLocomotion.cppのConvexMPCLocomotion::updateMPCIfNeeded()
     ```
     //MPC Weights
     double Q[12] = {100, 100, 250,  1, 200, 300,  1, 1, 1,  1, 1, 1}; // roll pitch yaw x y z droll dpitch dyaw dx dy dz
     double Alpha[12] = {1e-4, 1e-4, 5e-4, 1e-4, 1e-4, 5e-4,   1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2};
     ```
-- horizonLength, mu, f_max
+###### horizonLength, mu, f_max
     src/ConvexMPC/ConvexMPCLocomotion.cppのConvexMPCLocomotion::ConvexMPCLocomotion()
     ```
     horizonLength(10),
@@ -110,7 +113,7 @@ hector_simulationリポジトリではGazeboシミュレエータ上で動かす
     #endif
     #endif
     ```
-- 足裏摩擦　lt, lh
+###### 足裏摩擦　lt, lh
     src/ConvexMPC/SolverMPC.cppのsolve_mpc()
     ```
     // Initalization of Line Contact Constraint Parameters
@@ -131,16 +134,14 @@ hector_simulationリポジトリではGazeboシミュレエータ上で動かす
     #endif
     ```
     足裏摩擦に関する設定　うまく設定しないと足首がめくれるようになってしまう。
-- dt, iterationsBetweenMPC
+###### dt, iterationsBetweenMPC
     上述したが、ConvexMPCLocomotion::Cmpcの初期化時に dt, iterationsBetweenMPC を設定している。
     src/FSM/FSMState_Walking.cpp の FSMState_Walking::FSMState_Walking()
     ```
     Cmpc(0.001, 40, data->_biped->height, data->_biped->mass)
     ```
 
-    SwingLegController.h の class swingLegController に、_dt がある。統合すべきだが、できていない。dtを変更する場合は注意。
-
-- 慣性モーメント I_body
+###### 慣性モーメント I_body
     src/ConvexMPC/RobotState.cpp の RobotState::set()
     ```
     #ifdef _LAMBDA_R2_
@@ -152,12 +153,28 @@ hector_simulationリポジトリではGazeboシミュレエータ上で動かす
 
 ### 関節パラメータ設定(Kp, Kd)
 関節の制御パラメータ、アクチュエータの制御パラメータは歩行制御にとって重要な要素であるが、これらは以下の個所で設定されている。
-- Standing Leg
+###### Standing Leg
     src/common/StandLegController.cppのsetDesiredJointState()
-- Swing Leg
+###### Swing Leg
     src/common/SwingLegController.cppのsetDesiredJointState()
-- Stance Leg(支持脚)
+###### Stance Leg(支持脚)
+    src/common/LegController.cpp にて決定している。が、単にゼロを入れているだけ。
+    DFMで動かすにはここで設定が必要。
+    ```
+    for (int j = 0; j < 5; j++){
+        cmd->motorCmd[i*5+j].tau = commands[i].tau(j);
+        cmd->motorCmd[i*5+j].q = commands[i].qDes(j);
+        cmd->motorCmd[i*5+j].dq = commands[i].qdDes(j);
+        cmd->motorCmd[i*5+j].Kp = commands[i].kpJoint(j,j);
+        cmd->motorCmd[i*5+j].Kd = commands[i].kdJoint(j,j);
+    }
+    ```
 ### About IMU
+胴体に搭載したIMUからの姿勢データ、角速度データを使い、胴体位置、姿勢、足の座標、速度、角速度を得る。
+
+ただし、シミュレーションでは問題無く動くが、実機では足が振動してうまくいかない。
+これは、遊脚の位置を胴体姿勢を折り込んでいるせいだが、アクチュエータの制御設定がstiffnessになっているためだと思う。
+遊脚の制御設定はある程度elasticな設定にしなければならないのだろう。
 ### 自己位置について
 ### About Swing Leg
 このプログラムでロボットが歩けるのはSwingLegControllerにちょっとした仕掛けがあることが大きなポイントとなっている。
