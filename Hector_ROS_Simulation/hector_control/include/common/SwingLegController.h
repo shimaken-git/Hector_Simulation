@@ -20,18 +20,19 @@ class swingLegController : public LegIk {
         swingLegController() = default;
         ~swingLegController() = default;
 
-        swingLegController(ControlFSMData *data, Gait* gait, double dtSwing);
+        swingLegController(ControlFSMData *data, Gait* gait, double dt, double dtSwing);
 
         /**
          * @brief Initialize the swing leg controller
          * @param data: pointer to the control data
          * @param gait: pointer to the gait generator
+         * @param dt: time step
          * @param dtSwing: time step for the swing leg controller
          * @note This function is an alternative to the constructor in case 
          *       the gait generator and control data are not available at 
          *       the time of construction
         */
-        void initSwingLegController(ControlFSMData *data, Gait* gait, double dtSwing);
+        void initSwingLegController(ControlFSMData *data, Gait* gait, double dt, double dtSwing);
         
         /**
          * @brief Update the swing leg controller
@@ -53,6 +54,7 @@ class swingLegController : public LegIk {
         Gait* gait;
         const ControlFSMData* data;
         StateEstimate seResult;
+        double _dt;
         double _dtSwing;
         FootSwingTrajectory<double> footSwingTrajectory[nLegs];
         Vec3<double> pFoot_w[nLegs];
@@ -80,7 +82,6 @@ class swingLegController : public LegIk {
 
 
         // constants can be adjusted if needed
-        const double _dt = 0.001;
 #ifdef _HECTOR_
         const double footHeight = 0.15;        //足上げ高さ
 #else

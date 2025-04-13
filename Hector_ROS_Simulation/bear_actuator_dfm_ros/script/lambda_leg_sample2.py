@@ -49,6 +49,11 @@ axis = [
 limit_max = [0.2, 0.3, 1.5, 2.5, 1.5, 0.2, 0.3, 1.5, 2.5, 1.5]
 limit_min = [-0.2, -0.3, -1.5, -0.05, -1.5, -0.2, -0.3, -1.5, -0.05, -1.5]
 
+joy_x = 0.0
+joy_y = 0.0
+joy_rz = 0.0
+joy_ry = 0.0
+
 def joint_data_check(j_data):
     global limit_max, limit_min
     res = True
@@ -127,7 +132,7 @@ def leg_pub(tgt_left_z, tgt_right_z, sec, nsec):
     joint_publish(joint_l, joint_r, sec, nsec)
 
 def joyCb(data):
-    global command, bfr_button6, bfr_button7
+    global command, bfr_button6, bfr_button7, joy_y, joy_x, joy_rz, joy_ry
     # print("L2", data.axes[3], " R2", data.axes[4], "L2", data.buttons[6], "R2",  data.buttons[7])
     if bfr_button6 == 0 and data.buttons[6] == 1:
         command = "left"
@@ -139,6 +144,10 @@ def joyCb(data):
         bfr_button7 = 1
     elif bfr_button7 == 1 and data.buttons[7] == 0:
         bfr_button7 = 0
+    joy_y = data.axes[0]  # LJ←→
+    joy_x = data.axes[1]  # LJ↑↓ 
+    joy_rz = data.axes[2]  # RJ←→
+    joy_ry = data.axes[5]  # RJ↑↓
 
 def jointCb(data):
     global positions
@@ -232,6 +241,13 @@ def leg_control():
     dt = 0.0
     phase = 0.0
 
+    ljdefault = []
+    rjdefault = []
+    for i in range(5):
+        ljdefault.append(0.0)
+        rjdefault.append(0.0)
+
+
     r = rospy.Rate(100)  # 100Hz
     while not rospy.is_shutdown():
         if command == "zero" :
@@ -302,36 +318,33 @@ def leg_control():
                 phase = 0.0
 
         elif command == "jacob" :
-            diff_left = 0.0
-            diff_right = 0.0
+            """
+            DirectForceModeを使い、位置制御とトルク制御を合わせる。
+            qにはデフォルト関節角度を与え、tauでトルクを与えて期待の床反力を発生させる。
+            Kp,Kdを位置制御の時より下げる必要が有る。
+            """
             # command = ""
-            fx = 0.0
-            fy = 0.0
-            fz = -25.0
-            my = 0.0
-            mz = 0.0
+            fx = joy_x * 5.0
+            fy = joy_y * 5.0
+            fz = -10.0
+            my = joy_ry * 3.0
+            mz = joy_rz * 3.0
 
-            ljoint, lpoints, lrots, rjoint, rpoints, rrots = get_present_pos()
-            lpoints, lrots = dk(ljoint)
-            rpoints, rrots = dk(rjoint)
             if jacob_first:
+                for i in range(5):
+                    ljdefault[i] = motorState[i].q
+                for i in range(5, 10):
+                    rjdefault[i - 5] = motorState[i].q
+                ljoint, lpoints, lrots, rjoint, rpoints, rrots = get_present_pos()
                 target_height_left = -lpoints[5][2, 0]
                 target_height_right = -rpoints[5][2, 0]
                 print("target hight left :", target_height_left)
                 print("target hight right :", target_height_right)
                 jacob_first = False
-            else:
-                diff_left = target_height_left + lpoints[5][2, 0]
-                diff_right = target_height_right + rpoints[5][2, 0]
-                print("diff", diff_left, diff_right)
-            fa = diff_left * fb_coef
-            print("fa:", fa, diff_left, fb_coef)
-            ui = np.matrix([[fx, fy, fz + fa, my, mz]]).transpose()
+            ui = np.matrix([[fx, fy, fz, my, mz]]).transpose()
             ja = jacobian(lpoints, lrots)
             ltau = ja.transpose() * ui
-            fa = diff_right * fb_coef
-            print("fa:", fa, diff_right, fb_coef)
-            ui = np.matrix([[fx, fy, fz + fa, my, mz]]).transpose()
+            ui = np.matrix([[fx, fy, fz, my, mz]]).transpose()
             ja = jacobian(rpoints, rrots)
             rtau = ja.transpose() * ui
             print("ltau", ltau)
@@ -341,16 +354,16 @@ def leg_control():
             mtcmd.q = 0.0
             mtcmd.dq = 0.0
             mtcmd.tau = 0.0
-            mtcmd.Kp = 0.0
-            mtcmd.Kd = 0.0
+            mtcmd.Kp = 20.0
+            mtcmd.Kd = 2.0
             for t in ltau :
-                mtcmd.q = motorState[i].q
+                mtcmd.q = ljdefault[i]
                 mtcmd.tau = t[0,0]
                 pub[i].publish(mtcmd)
                 print (mtcmd.tau)
                 i += 1
             for t in rtau :
-                mtcmd.q = motorState[i].q
+                mtcmd.q = rjdefault[i - 5]
                 mtcmd.tau = t[0,0]
                 pub[i].publish(mtcmd)
                 print (mtcmd.tau)

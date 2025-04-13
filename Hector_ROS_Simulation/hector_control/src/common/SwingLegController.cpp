@@ -5,19 +5,20 @@
 /******************************************************************************************************/
 /******************************************************************************************************/
 
-swingLegController::swingLegController(ControlFSMData *data, Gait* gait, double dtSwing){
+swingLegController::swingLegController(ControlFSMData *data, Gait* gait, double dt, double dtSwing){
     std::cout << "swingLegController construct start." << std::endl;
-    initSwingLegController(data, gait, dtSwing);
+    initSwingLegController(data, gait, dt, dtSwing);
     std::cout << "swingLegController construct end." << std::endl;
 }
 
 /******************************************************************************************************/
 /******************************************************************************************************/
 
-void swingLegController::initSwingLegController(ControlFSMData *data, Gait* gait, double dtSwing){
+void swingLegController::initSwingLegController(ControlFSMData *data, Gait* gait, double dt, double dtSwing){
     std::cout << "swingLegController initialize start." << std::endl;
     this->data = data;
     this->gait = gait;
+    _dt = dt;
     _dtSwing = dtSwing;
     L_hipYawLocation = data->_biped->getHipYawLocation(0);
     L_hipRollLocation = data->_biped->getHipRollLocation(0);

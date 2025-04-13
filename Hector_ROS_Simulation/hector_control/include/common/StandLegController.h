@@ -69,7 +69,7 @@ class standLegController : public LegIk {
 
 
         // constants can be adjusted if needed
-        const double _dt = 0.001;
+        // const double _dt = 0.001;
 
 }; // class standLegController
 

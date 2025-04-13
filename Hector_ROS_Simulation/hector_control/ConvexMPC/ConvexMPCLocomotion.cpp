@@ -93,7 +93,7 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
   // some first time initialization
   if (firstRun)
   {
-    swing.initSwingLegController(&data, gait, dtMPC);
+    swing.initSwingLegController(&data, gait, dt, dtMPC);
     std::cout << "Run MPC" << std::endl;
     world_position_desired[0] = seResult.position[0];
     world_position_desired[1] = seResult.position[1];

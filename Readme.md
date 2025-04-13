@@ -64,6 +64,7 @@ The robot should be standing on the ground
 * Use J or L to control y direction speed
 
 ### launch and run real-robot in real-world
+include/common/robot_select.h の #define BEAR_REAL を設定し、catkin_make で build する。
 
 term1
 ```
@@ -77,14 +78,47 @@ term3
 ```
 rosrun hector_control hector_ctrl
 ```
+term4をfocusし、
+0:足踏み開始
+9:停止
+1:サーボオフ
+w:前
+s:後
+a:左旋回
+d:右旋回
+
+### launch in simulation
+include/common/robot_select.h の #define BEAR_REAL をコメントアウトし、catkin_make で build する。
+
+term1
+```
+roslaunch unitree_gazebo wwlambda_r2.launch
+```
+term2
+```
+rosrun hector_control hector_ctrl
+```
+gazeboのplayアイコンをクリックし、play開始
+term2をfocusし、
+0:足踏み開始
+9:停止
+1:サーボオフ
+w:前
+s:後
+a:左旋回
+d:右旋回
+
 
 ### Hardware configulation
 
 ロボットのアクチュエータとして、westwood robotics Koala BEAR 及び Steadywin GIM4310-10 SHS driver を想定している。
 Koala BEARは専用のRS485インターフェイスドングルを使い、8Mbpsで接続、GIM4310-10はCANインターフェイスにて接続する。
 
+Koara BEAR
 https://www.westwoodrobotics.io/bearseries/
+Steadywin GIM
 https://ja.aliexpress.com/item/1005004032853363.html
+Hardware block chart
 https://github.com/shimaken-git/Hector_Simulation/blob/west-wood/robot.drawio
 
 ### CAN interface
@@ -94,11 +128,11 @@ https://www.amazon.co.jp/dp/B0CZS2V9RZ?ref_=ppx_hzsearch_conn_dt_b_fed_asin_titl
 
 ## Device setting
 70-candle-usb.rulesの"/home/XXXXX/can_program/canable_setting.sh"の部分を適宜修正
-'''
+```
 cp can_interface/70-candle-usb.rulesを/etc/udev/rules.d/
 cp can_interface/canable_setting.sh /home/[your_name]/can_program/
 sudo udevadm control --reload
-'''
+```
 
 ## Cite Us:
 Thank you for choosing our software for your research and development, we highly appreciate your citing our work:
