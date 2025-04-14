@@ -147,6 +147,7 @@ MPCの設定に使われている(上述)、ここで設定が完結していな
 ##### Stance Leg(支持脚)
     src/common/LegController.cpp にて決定している。が、単にゼロを入れているだけ。
     DFMで動かすにはここで設定が必要。
+
     ```
     for (int j = 0; j < 5; j++){
         cmd->motorCmd[i*5+j].tau = commands[i].tau(j);
@@ -156,6 +157,7 @@ MPCの設定に使われている(上述)、ここで設定が完結していな
         cmd->motorCmd[i*5+j].Kd = commands[i].kdJoint(j,j);
     }
     ```
+    
 ### About IMU
 胴体に搭載したIMUからの姿勢データ、角速度データを使い、胴体位置、姿勢、足の座標、速度、角速度を得る。
 
