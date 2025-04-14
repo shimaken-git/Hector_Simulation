@@ -34,9 +34,9 @@ hector_simulationリポジトリではGazeboシミュレエータ上で動かす
 
 ## Programing
 
-### include/commmon/robot_select.h
+### Basic setting
 
-```
+###### include/commmon/robot_select.h
 //#define _HECTOR_     <= 本家Hector
 //#define _LAMBDA_     <= 旧ロボット設定　事実上不要
 #define _LAMBDA_R2_    <= 現状のロボット設定
@@ -50,31 +50,29 @@ hector_simulationリポジトリではGazeboシミュレエータ上で動かす
 #define FOOTSENSOR         <= 足裏センサー使用　足裏センサーを起点に自己位置計算を行う。本日現在まともに動かない
 #define HUMAN              <= ヒト足モード 本家Hectorは鳥足構造を取っている。_LAMBDA_R2_設定時のみ有効　コメントアウトすると鳥足になる。
 
-```
 ### About Robot Setting
 ロボットの構造や制御設定はできるだけinclude/common/Biped.hに集約するようにしているが完全ではない。
 以下に注意点を示す。
 #### robot setting
 ###### include/common/Biped.h
 ロボットの構造や制御設定はできるだけここに集約している。ただし、完全ではない。
-###### mass
+##### mass
  MPCの設定に使われている。
 src/FSM/FSMState_Walking.cpp の FSMState_Walking::FSMState_Walking()
 ```
 Cmpc(0.001, 40, data->_biped->height, data->_biped->mass)
 ```
 Biped.h -> ConvexLocomotion::ConvexLocomotion() -> update_problem_data() -> solver_mpc() -> ct_ss_mats()　と最終的にct_ss_mats()にて適用される。
-###### height
+##### height
 MPCの設定に使われている(上述)、ここで設定が完結していない。
     - gazebo
         unitree_ros/unitree_gazebo/launch/wwlambda_rs.launch内でz値が指定されている
-###### jacobian
+##### jacobian
     src/common/LegController.cppのcomputeLegJacobianAndPosition()ではロボット構造値を独自で設定している
-###### inverse kinematics
+##### inverse kinematics
     src/common/LegIk.cppのcomputeIK_()では一部構造値をコード上で記述している。
-###### footHeight 遊脚の足上げ高さ
-    include/common/SwingLegController.h
-    ```
+##### footHeight 遊脚の足上げ高さ
+###### include/common/SwingLegController.h
     #ifdef _LAMBDA_R2_
     #ifdef debug
             const double footHeight = 0.06;        //足上げ高さ
@@ -82,22 +80,17 @@ MPCの設定に使われている(上述)、ここで設定が完結していな
             const double footHeight = 0.15;        //足上げ高さ
     #endif
     #endif
-    ```
+
 ### About MPC Setting
-###### MPC Weights
-    src/ConvexMPC/ConvexMPCLocomotion.cppのConvexMPCLocomotion::updateMPCIfNeeded()
-    ```
+##### MPC Weights
+###### src/ConvexMPC/ConvexMPCLocomotion.cppのConvexMPCLocomotion::updateMPCIfNeeded()
     //MPC Weights
     double Q[12] = {100, 100, 250,  1, 200, 300,  1, 1, 1,  1, 1, 1}; // roll pitch yaw x y z droll dpitch dyaw dx dy dz
     double Alpha[12] = {1e-4, 1e-4, 5e-4, 1e-4, 1e-4, 5e-4,   1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2};
-    ```
-###### horizonLength, mu, f_max
-    src/ConvexMPC/ConvexMPCLocomotion.cppのConvexMPCLocomotion::ConvexMPCLocomotion()
-    ```
+##### horizonLength, mu, f_max
+###### src/ConvexMPC/ConvexMPCLocomotion.cppのConvexMPCLocomotion::ConvexMPCLocomotion()
     horizonLength(10),
-    ```
 
-    ```
     #ifdef _HECTOR_
     f_max = 500;
     mu = 0.25;
@@ -112,10 +105,9 @@ MPCの設定に使われている(上述)、ここで設定が完結していな
     #endif
     #endif
     #endif
-    ```
-###### 足裏摩擦　lt, lh
-    src/ConvexMPC/SolverMPC.cppのsolve_mpc()
-    ```
+##### 足裏摩擦　lt, lh
+    足裏摩擦に関する設定　うまく設定しないと足首がめくれるようになってしまう。
+###### src/ConvexMPC/SolverMPC.cppのsolve_mpc()
     // Initalization of Line Contact Constraint Parameters
     fpt mu = setup->mu;
     #if defined(_HECTOR_)
@@ -132,32 +124,27 @@ MPCの設定に使われている(上述)、ここで設定が完結していな
     #endif
     #endif
     #endif
-    ```
-    足裏摩擦に関する設定　うまく設定しないと足首がめくれるようになってしまう。
-###### dt, iterationsBetweenMPC
-    上述したが、ConvexMPCLocomotion::Cmpcの初期化時に dt, iterationsBetweenMPC を設定している。
-    src/FSM/FSMState_Walking.cpp の FSMState_Walking::FSMState_Walking()
-    ```
-    Cmpc(0.001, 40, data->_biped->height, data->_biped->mass)
-    ```
 
-###### 慣性モーメント I_body
-    src/ConvexMPC/RobotState.cpp の RobotState::set()
-    ```
+##### dt, iterationsBetweenMPC
+    上述したが、ConvexMPCLocomotion::Cmpcの初期化時に dt, iterationsBetweenMPC を設定している。
+###### src/FSM/FSMState_Walking.cpp の FSMState_Walking::FSMState_Walking()
+    Cmpc(0.001, 40, data->_biped->height, data->_biped->mass)
+
+##### 慣性モーメント I_body
+###### src/ConvexMPC/RobotState.cpp の RobotState::set()
     #ifdef _LAMBDA_R2_
         I_body << 50320829.484e-9, -788.372e-9, -5101.664e-9,
                 -788.372e-9,  44848336.284e-9, -156655.156e-9,
                 -5101.664e-9, -156655.156e-9, 17863828.962e-9;
     #endif
-    ```
 
 ### 関節パラメータ設定(Kp, Kd)
 関節の制御パラメータ、アクチュエータの制御パラメータは歩行制御にとって重要な要素であるが、これらは以下の個所で設定されている。
-###### Standing Leg
+##### Standing Leg
     src/common/StandLegController.cppのsetDesiredJointState()
-###### Swing Leg
+##### Swing Leg
     src/common/SwingLegController.cppのsetDesiredJointState()
-###### Stance Leg(支持脚)
+##### Stance Leg(支持脚)
     src/common/LegController.cpp にて決定している。が、単にゼロを入れているだけ。
     DFMで動かすにはここで設定が必要。
     ```
