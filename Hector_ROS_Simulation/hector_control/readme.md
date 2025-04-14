@@ -58,7 +58,7 @@ hector_simulationリポジトリではGazeboシミュレエータ上で動かす
 ロボットの構造や制御設定はできるだけここに集約している。ただし、完全ではない。
 ##### mass
  MPCの設定に使われている。
-src/FSM/FSMState_Walking.cpp の FSMState_Walking::FSMState_Walking()
+###### src/FSM/FSMState_Walking.cpp の FSMState_Walking::FSMState_Walking()
 ```
 Cmpc(0.001, 40, data->_biped->height, data->_biped->mass)
 ```
@@ -106,7 +106,7 @@ MPCの設定に使われている(上述)、ここで設定が完結していな
     #endif
     #endif
 ##### 足裏摩擦　lt, lh
-    足裏摩擦に関する設定　うまく設定しないと足首がめくれるようになってしまう。
+足裏摩擦に関する設定　うまく設定しないと足首がめくれるようになってしまう。
 ###### src/ConvexMPC/SolverMPC.cppのsolve_mpc()
     // Initalization of Line Contact Constraint Parameters
     fpt mu = setup->mu;
@@ -126,7 +126,7 @@ MPCの設定に使われている(上述)、ここで設定が完結していな
     #endif
 
 ##### dt, iterationsBetweenMPC
-    上述したが、ConvexMPCLocomotion::Cmpcの初期化時に dt, iterationsBetweenMPC を設定している。
+上述したが、ConvexMPCLocomotion::Cmpcの初期化時に dt, iterationsBetweenMPC を設定している。
 ###### src/FSM/FSMState_Walking.cpp の FSMState_Walking::FSMState_Walking()
     Cmpc(0.001, 40, data->_biped->height, data->_biped->mass)
 
@@ -141,23 +141,23 @@ MPCの設定に使われている(上述)、ここで設定が完結していな
 ### 関節パラメータ設定(Kp, Kd)
 関節の制御パラメータ、アクチュエータの制御パラメータは歩行制御にとって重要な要素であるが、これらは以下の個所で設定されている。
 ##### Standing Leg
-    src/common/StandLegController.cppのsetDesiredJointState()
+src/common/StandLegController.cppのsetDesiredJointState()
 ##### Swing Leg
-    src/common/SwingLegController.cppのsetDesiredJointState()
+src/common/SwingLegController.cppのsetDesiredJointState()
 ##### Stance Leg(支持脚)
-    src/common/LegController.cpp にて決定している。が、単にゼロを入れているだけ。
-    DFMで動かすにはここで設定が必要。
+src/common/LegController.cpp にて決定している。が、単にゼロを入れているだけ。
+DFMで動かすにはここで設定が必要。
 
-    ```
-    for (int j = 0; j < 5; j++){
-        cmd->motorCmd[i*5+j].tau = commands[i].tau(j);
-        cmd->motorCmd[i*5+j].q = commands[i].qDes(j);
-        cmd->motorCmd[i*5+j].dq = commands[i].qdDes(j);
-        cmd->motorCmd[i*5+j].Kp = commands[i].kpJoint(j,j);
-        cmd->motorCmd[i*5+j].Kd = commands[i].kdJoint(j,j);
-    }
-    ```
-    
+```
+for (int j = 0; j < 5; j++){
+    cmd->motorCmd[i*5+j].tau = commands[i].tau(j);
+    cmd->motorCmd[i*5+j].q = commands[i].qDes(j);
+    cmd->motorCmd[i*5+j].dq = commands[i].qdDes(j);
+    cmd->motorCmd[i*5+j].Kp = commands[i].kpJoint(j,j);
+    cmd->motorCmd[i*5+j].Kd = commands[i].kdJoint(j,j);
+}
+```
+
 ### About IMU
 胴体に搭載したIMUからの姿勢データ、角速度データを使い、胴体位置、姿勢、足の座標、速度、角速度を得る。
 
