@@ -72,12 +72,12 @@ void LegController::updateCommand(LowlevelCmd* cmd){
 
 #ifdef BEAR_REAL
 #ifdef TORQUE_RESTRICT
-        double torque_limit = 15.0;
+        double torque_limit = 3.0;
         for(int i = 0; i < 5; i++){
-            // legtau[i] = 0.0;
+            legtau[i] = 0.0;
             // legtau[i] *= 0.9;
-            if(legtau[i] > torque_limit) legtau[i] = torque_limit;
-            if(legtau[i] < -torque_limit) legtau[i] = -torque_limit;
+            // if(legtau[i] > torque_limit) legtau[i] = torque_limit;
+            // if(legtau[i] < -torque_limit) legtau[i] = -torque_limit;
         }
 #endif
 #endif

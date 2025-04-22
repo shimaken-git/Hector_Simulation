@@ -167,30 +167,20 @@ void standLegController::setDesiredJointState(){
             Eigen::VectorXd kpgains(5);
             kpgains << 20, 20, 20, 20, 20;
             Eigen::VectorXd kdgains(5);
-            kdgains << 0.5, 0.5, 0.5, 0.5, 0.5;
+            kdgains << 1.0, 1.0, 1.0, 1.0, 1.0;
 #else
             Eigen::VectorXd kpgains(5);
             kpgains << 30, 30, 30, 30, 20;
             Eigen::VectorXd kdgains(5);
             kdgains << 1, 1, 1, 1, 1;
 #endif
-             data->_legController->commands[leg].feedforwardForce << 0, 0, 0 , 0 , 0 , 0;
-             data->_legController->commands[leg].pDes = pFoot_b[leg];
-             data->_legController->commands[leg].vDes = vFoot_b[leg];
-             data->_legController->commands[leg].kpJoint = kpgains.asDiagonal();
-             data->_legController->commands[leg].kdJoint = kdgains.asDiagonal();             
-             data->_legController->commands[leg].kptoe = 5; 
-             data->_legController->commands[leg].kdtoe = 0.1;              
-        }else{
-            //Ensure no interference with stance leg controller
-            Eigen::VectorXd kpgains(5);
-            Eigen::VectorXd kdgains(5);
-            kpgains.setZero();
-            kdgains.setZero();
+            data->_legController->commands[leg].feedforwardForce << 0, 0, 0 , 0 , 0 , 0;
+            data->_legController->commands[leg].pDes = pFoot_b[leg];
+            data->_legController->commands[leg].vDes = vFoot_b[leg];
             data->_legController->commands[leg].kpJoint = kpgains.asDiagonal();
-            data->_legController->commands[leg].kdJoint = kdgains.asDiagonal(); 
-            data->_legController->commands[leg].kpCartesian = Eigen::Matrix3d::Zero();
-            data->_legController->commands[leg].kdCartesian = Eigen::Matrix3d::Zero();               
+            data->_legController->commands[leg].kdJoint = kdgains.asDiagonal();             
+            data->_legController->commands[leg].kptoe = 5; 
+            data->_legController->commands[leg].kdtoe = 0.1;              
         }
     }
 }

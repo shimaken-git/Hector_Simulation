@@ -211,7 +211,7 @@ void swingLegController::setDesiredJointState(){
 #ifdef BEAR_REAL
 // #ifdef TORQUE_RESTRICT
             Eigen::VectorXd kpgains(5);
-            kpgains << 20, 20, 20, 20, 20;
+            kpgains << 10, 10, 10, 10, 10;
             Eigen::VectorXd kdgains(5);
             kdgains << 0.5, 0.5, 0.5, 0.5, 0.5;
 #else
@@ -220,19 +220,19 @@ void swingLegController::setDesiredJointState(){
             Eigen::VectorXd kdgains(5);
             kdgains << 1, 1, 1, 1, 1;
 #endif
-             data->_legController->commands[leg].feedforwardForce << 0, 0, 0 , 0 , 0 , 0;
-             data->_legController->commands[leg].pDes = pFoot_b[leg];
-             data->_legController->commands[leg].vDes = vFoot_b[leg];
-             data->_legController->commands[leg].kpJoint = kpgains.asDiagonal();
-             data->_legController->commands[leg].kdJoint = kdgains.asDiagonal();             
-             data->_legController->commands[leg].kptoe = 5; 
-             data->_legController->commands[leg].kdtoe = 0.1;              
+            data->_legController->commands[leg].feedforwardForce << 0, 0, 0 , 0 , 0 , 0;
+            data->_legController->commands[leg].pDes = pFoot_b[leg];
+            data->_legController->commands[leg].vDes = vFoot_b[leg];
+            data->_legController->commands[leg].kpJoint = kpgains.asDiagonal();
+            data->_legController->commands[leg].kdJoint = kdgains.asDiagonal();             
+            data->_legController->commands[leg].kptoe = 5; 
+            data->_legController->commands[leg].kdtoe = 0.1;              
         }else{
             //Ensure no interference with stance leg controller
             Eigen::VectorXd kpgains(5);
+            kpgains << 0, 0, 0, 0, 0;
             Eigen::VectorXd kdgains(5);
-            kpgains.setZero();
-            kdgains.setZero();
+            kdgains << 0.0, 0.0, 0.0, 0.0, 0.0;
             data->_legController->commands[leg].kpJoint = kpgains.asDiagonal();
             data->_legController->commands[leg].kdJoint = kdgains.asDiagonal(); 
             data->_legController->commands[leg].kpCartesian = Eigen::Matrix3d::Zero();
