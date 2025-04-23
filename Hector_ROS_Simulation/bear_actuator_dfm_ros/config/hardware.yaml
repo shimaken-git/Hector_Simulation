@@ -21,9 +21,10 @@ row_joint:
     mode: 3
   joint5:
     ID: 2
-    type: gim
+    type: mit
     cal_rpm: -7
     limit: -1.30
+    torque_offset: 0.0
   joint6:
     ID: 11
     type: bear
@@ -46,9 +47,10 @@ row_joint:
     mode: 3
   joint10:
     ID: 1
-    type: gim
+    type: mit
     cal_rpm: 7
     limit: 1.39
+    torque_offset: 0.0
 
 robot_joint:
   L_hip_joint:

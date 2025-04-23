@@ -23,6 +23,7 @@ class MIT{
         MIT();
         ~MIT(){};
 
+        void SetCanDevice(std::string can_name_);
         void EntryActuator(uint8_t id);
         void EntryZeropos(uint8_t id, float zeropos);
         int32_t connect();
@@ -46,6 +47,7 @@ class MIT{
         float GetTorque(uint16_t id, int32_t &result);
 
     private:
+        std::string can_name;
         float torque_constant;
         float gear_ratio;
         int32_t s;
@@ -65,6 +67,7 @@ class MIT{
         std::map<uint8_t, float> present_torque;
         std::map<uint8_t, float> kp;
         std::map<uint8_t, float> kd;
+        std::map<uint8_t, float> torque_offset;
 
 };
 }

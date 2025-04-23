@@ -20,6 +20,7 @@
 #include <cbear/bear_sdk.h>
 #include <cbear/bear_macro.h>
 #include <gim/gim.h>
+#include <mit/mit.h>
 #include <unistd.h>
 #include <math.h>
 #include <eigen3/Eigen/Core>
@@ -42,6 +43,7 @@ HardwareInterface::HardwareInterface(ros::NodeHandle nh, ros::NodeHandle private
   ** Initialize ROS parameters
   ************************************************************/
   port_name_ = priv_node_handle_.param<std::string>("usb_port", "/dev/ttyUSB0");
+  gim_port_name_ = priv_node_handle_.param<std::string>("can_port", "can0");
   baud_rate_ = priv_node_handle_.param<int32_t>("baud_rate", 8000000);
   yaml_file_ = priv_node_handle_.param<std::string>("yaml_file", "");
   interface_ = priv_node_handle_.param<std::string>("interface", "dfm");
@@ -263,6 +265,7 @@ bool HardwareInterface::gimConnect()
   int result;
   char log[256];
 
+  gim_handle.SetCanDevice(gim_port_name_);
   result = gim_handle.connect();
   if (result != 1)
   {
@@ -325,7 +328,11 @@ bool HardwareInterface::getActuatorInfo(const std::string yaml_file)
         bearActuator_info_[name] = info_vec;
         currentKp.push_back(0.0);
         currentKd.push_back(0.0);
+#ifdef USE_MIT
+      }else if(type_name == "mit"){
+#else
       }else if(type_name == "gim"){
+#endif
         std::vector<ItemValueD> info_vec;
         for (YAML::const_iterator it_item = item.begin(); it_item != item.end(); it_item++)
         {
@@ -344,6 +351,15 @@ bool HardwareInterface::getActuatorInfo(const std::string yaml_file)
           }
           gimActuator_info_[name] = info_vec;
         }
+        // torque_offset の取り込み
+        float t_offset_ = 0.0;
+        for(auto i : info_vec){
+          if(i.item_name == "torque_offset"){
+            t_offset_ = i.value;
+            break;
+          }
+        }
+        gim_handle.torque_offst[gimActuator_[name]];
       }
     }
 

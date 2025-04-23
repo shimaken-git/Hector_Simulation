@@ -22,9 +22,14 @@ union a{
 };
 
 namespace gim{
-GIM::GIM():torque_constant(0.066), gear_ratio(10)
+GIM::GIM():can_name(CAN_NAME), torque_constant(0.066), gear_ratio(10)
 {
 
+}
+
+void SetCanDevice(std::string can_name_)
+{
+    can_name = can_name_;
 }
 
 void GIM::EntryActuator(uint16_t id)
@@ -44,7 +49,7 @@ int32_t GIM::connect()
         return -2;
     }
     memset(&ifr.ifr_name, 0, sizeof(ifr.ifr_name));
-    strncpy(ifr.ifr_name, CAN_NAME, sizeof(ifr.ifr_name));
+    strncpy(ifr.ifr_name, can_name.c_str(), sizeof(ifr.ifr_name));
 
     ifr.ifr_ifindex = if_nametoindex(ifr.ifr_name);
     if(! ifr.ifr_ifindex){

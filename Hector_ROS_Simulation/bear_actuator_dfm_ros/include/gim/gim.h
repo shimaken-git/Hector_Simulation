@@ -23,6 +23,7 @@ class GIM{
         GIM();
         ~GIM(){};
 
+        void SetCanDevice(std::string can_name_);
         void EntryActuator(uint16_t id);
         void EntryZeropos(uint16_t id, float zeropos);
         int32_t connect();
@@ -47,6 +48,7 @@ class GIM{
         float GetTorque(uint16_t id, int32_t &result);
 
     private:
+        std::string can_name;
         int32_t s;
         struct ifreq ifr;
         struct sockaddr_can addr;
@@ -64,6 +66,7 @@ class GIM{
         std::map<uint8_t, float> present_position;
         std::map<uint8_t, float> present_velocity;
         std::map<uint8_t, float> present_torque;
+        std::map<uint8_t, float> torque_offset;
 
 };
 }

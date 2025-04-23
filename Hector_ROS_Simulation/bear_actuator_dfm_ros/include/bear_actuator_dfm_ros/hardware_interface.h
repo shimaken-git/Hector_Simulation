@@ -17,6 +17,8 @@
 #ifndef BEAR_ACTUATOR_HARDWARE_INTERFACE_H
 #define BEAR_ACTUATOR_HARDWARE_INTERFACE_H
 
+#define USE_MIT
+
 #include <yaml-cpp/yaml.h>
 
 #include <ros/ros.h>
@@ -33,6 +35,7 @@
 #include "cbear/bear_sdk.h"
 #include "cbear/bear_macro.h"
 #include "gim/gim.h"
+#include "mit/mit.h"
 
 typedef struct _ItemValue
 {
@@ -105,6 +108,7 @@ class HardwareInterface : public hardware_interface::RobotHW
 
   // ROS Parameters
   std::string port_name_;
+  std::string gim_port_name_;
   int32_t baud_rate_;
   std::string yaml_file_;
   std::string interface_;
@@ -121,7 +125,11 @@ class HardwareInterface : public hardware_interface::RobotHW
   std::map<std::string, std::vector<ItemValueD>> bearActuator_info_;
   std::map<uint32_t, uint32_t> idIndex_;  // first:ID  second:Index
 
+#ifdef USE_MIT
+  mit::MIT gim_handle;
+#else
   gim::GIM gim_handle;
+#endif
   std::map<std::string, uint32_t> gimActuator_;    //row joint information
   std::map<std::string, bool> gimValid_;           //row joint valid information
   // std::vector<std::pair<std::string, ItemValueD>> gimActuator_info_;
