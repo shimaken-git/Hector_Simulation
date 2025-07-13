@@ -137,7 +137,6 @@ void standLegController::computeFootDesiredPosition(){
     for(int foot = 0; foot < nLegs; foot++){
         Vec3<double> pDesFootWorld = pFoot_w[foot];
         Eigen::Vector3d hipWidthOffSet = data->_biped->getHipYawLocation(foot);
-        hipWidthOffSet(2) = 0.0;
         pFoot_b[foot] = seResult.rBody * (pDesFootWorld - seResult.position) - hipWidthOffSet ;  //原点を股関節に変換
         std::cout << "pDesFootWorld " << pDesFootWorld.transpose() << std::endl;
         std::cout << "hipWidthOffSet " << hipWidthOffSet.transpose() << std::endl;

@@ -208,7 +208,6 @@ void swingLegController::computeFootDesiredPosition(){
             // double side = (foot == 1) ? 1.0 : -1.0; //Left foot (0) side = -1.0, Right foot (1) side = 1.0
             // Eigen::Vector3d hipWidthOffSet = {-0.015, side*-0.057, 0.0}; // TODO: sync with Biped.h
             Eigen::Vector3d hipWidthOffSet = data->_biped->getHipYawLocation(foot);
-            hipWidthOffSet(2) = 0.0;
             pDesFootWorld[2] -=footStepIn;
             pFoot_b[foot] = seResult.rBody * (pDesFootWorld - seResult.position) - hipWidthOffSet ;  //原点を股関節に変換
             // vFoot_b[foot] = seResult.rBody * (vDesFootWorld*0 - seResult.vWorld);   // original
