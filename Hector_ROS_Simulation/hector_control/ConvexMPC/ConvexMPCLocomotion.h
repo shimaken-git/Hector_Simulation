@@ -72,6 +72,9 @@ private:
 
     // Feedback and Control Variables
     Mat3<double> Kp, Kd, Kp_stance, Kd_stance;
+    Vec5<double> kpgains;
+    Vec5<double> kdgains;
+
     bool firstSwing[2] = {true, true};
     double swingTimeRemaining[2];
     double stand_traj[6];

@@ -11,7 +11,7 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 #include <math.h>
-#include "gim/gim.h"
+#include <gim/gim.h>
 
 #define CAN_NAME "can0"
 
@@ -27,7 +27,7 @@ GIM::GIM():can_name(CAN_NAME), torque_constant(0.066), gear_ratio(10)
 
 }
 
-void SetCanDevice(std::string can_name_)
+void GIM::SetCanDevice(std::string can_name_)
 {
     can_name = can_name_;
 }
@@ -73,7 +73,7 @@ int32_t GIM::connect()
     return 1;
 }
 
-void GIM::gim_close()
+void GIM::can_close()
 {
     close(s);
 }

@@ -35,7 +35,7 @@
 #include "cbear/bear_sdk.h"
 #include "cbear/bear_macro.h"
 #include "gim/gim.h"
-#include "mit/mit.h"
+#include <mit/mit.hpp>
 
 typedef struct _ItemValue
 {
@@ -151,13 +151,16 @@ class HardwareInterface : public hardware_interface::RobotHW
   std::map<std::string, double> limitMangleMap;    // use torque control joint protection  plus torque side
   std::map<std::string, double> kdMap;             // use torque control joint protection  zero velocity control parameter
 
+  std::vector<std::string> jointName;
   std::vector<double> limitPangle;
   std::vector<double> limitMangle;
   std::vector<double> kd;
   std::vector<bool> protect;
+  std::vector<double> protect_over_pos;   //protectが働いた要因となった時の関節角度
   std::vector<double> counter_effort;
 
   bool kpChange;      //いずれかのbearActuatorのtargetKp,KdがcurrentKp,Kdと異なるとtrue
+  bool kpkdFirst;     //初回はKp、Kdの書き込みを行う
   std::vector<double> currentKp;   //bear actuator 毎に管理
   std::vector<double> currentKd;
 

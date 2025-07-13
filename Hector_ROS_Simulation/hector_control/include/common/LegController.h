@@ -67,7 +67,7 @@ SOFTWARE.
         Vec5<double> tau;
         Biped* hector;
 
-        Vec3<double> tip[2];
+        Vec3<double> tip[2];    // tip[0]: toe tip[1] heel
     };
 
 /*!

@@ -25,9 +25,9 @@ class MIT{
 
         void SetCanDevice(std::string can_name_);
         void EntryActuator(uint8_t id);
-        void EntryZeropos(uint8_t id, float zeropos);
+        void EntryZeropos(uint8_t id, float zeropos);  //Dummy for compatibility
         int32_t connect();
-        void mit_close();
+        void can_close();
         int32_t mit_write(uint16_t id, uint8_t *data);
         int32_t mit_read(uint16_t *id, uint8_t *data, uint8_t *dlc);
         bool ping(uint16_t id);
@@ -36,11 +36,11 @@ class MIT{
         int32_t SetZeroPosition(uint16_t id, uint8_t &err);
         int32_t On(uint16_t id, uint8_t &err);
         int32_t Off(uint16_t id, uint8_t &err);
-        int32_t SetCommand(uint16_t id, float position, float velocity, float torque, float kp, float kd);
-        int32_t SetPosition(uint16_t id, float position, uint8_t &err);
-        int32_t SetVelocity(uint16_t id, float velocity, uint8_t &err);
-        int32_t SetTorque(uint16_t id, float torque, uint8_t &err);
-        void SetParam(uint16_t id, float _kp, float _kd);
+        int32_t SetCommand(uint16_t id, float position, float velocity, float torque, float kp, float kd, int32_t &err);
+        int32_t SetPosition(uint16_t id, float position, uint32_t dur, uint8_t &err);
+        int32_t SetVelocity(uint16_t id, float velocity, uint32_t dur, uint8_t &err);
+        int32_t SetTorque(uint16_t id, float torque, uint32_t dur, uint8_t &err);
+        void SetKpKd(uint16_t id, float _kp, float _kd);
         void GetInfo(uint16_t id, int32_t &result);
         float GetPosition(uint16_t id, int32_t &result);
         float GetVelocity(uint16_t id, int32_t &result);
@@ -48,8 +48,6 @@ class MIT{
 
     private:
         std::string can_name;
-        float torque_constant;
-        float gear_ratio;
         int32_t s;
         struct ifreq ifr;
         struct sockaddr_can addr;
@@ -58,9 +56,11 @@ class MIT{
 
         uint8_t data[CAN_MAX_DLEN];
         uint8_t dlc;
-        std::vector<float> zeropos;
+        std::vector<float> zeropos;   //Dummy for compatibility
 
     public:
+        float torque_constant;
+        float gear_ratio;
         std::vector<uint8_t> ids;
         std::map<uint8_t, float> present_position;
         std::map<uint8_t, float> present_velocity;
@@ -68,6 +68,7 @@ class MIT{
         std::map<uint8_t, float> kp;
         std::map<uint8_t, float> kd;
         std::map<uint8_t, float> torque_offset;
+        std::map<uint8_t, bool> torque_status;
 
 };
 }

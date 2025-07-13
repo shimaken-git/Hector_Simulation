@@ -72,14 +72,17 @@ MPCの設定に使われている(上述)、ここで設定が完結していな
 ##### inverse kinematics
     src/common/LegIk.cppのcomputeIK_()では一部構造値をコード上で記述している。
 ##### footHeight 遊脚の足上げ高さ
-###### include/common/SwingLegController.h
-    #ifdef _LAMBDA_R2_
-    #ifdef debug
-            const double footHeight = 0.06;        //足上げ高さ
-    #else
-            const double footHeight = 0.15;        //足上げ高さ
-    #endif
-    #endif
+src/common/SwingLegController.cppのswingLegController::initSwingLegController()
+```
+#ifdef _LAMBDA_R2_
+#ifdef debug
+    footHeight = 0.06;        //足上げ高さ
+#else
+    footHeight = 0.15;        //足上げ高さ
+#endif
+
+#endif
+```
 
 ### About MPC Setting
 ##### MPC Weights
@@ -141,22 +144,40 @@ MPCの設定に使われている(上述)、ここで設定が完結していな
 ### 関節パラメータ設定(Kp, Kd)
 関節の制御パラメータ、アクチュエータの制御パラメータは歩行制御にとって重要な要素であるが、これらは以下の個所で設定されている。
 ##### Standing Leg
-src/common/StandLegController.cppのsetDesiredJointState()
+src/common/StandLegController.cppのstandLegController::initStandLegController()
+```
+#ifdef BEAR_REAL
+    kpgains << 20, 20, 20, 20, 20;
+    kdgains << 1.0, 1.0, 1.0, 1.0, 1.0;
+#else
+    kpgains << 30, 30, 30, 30, 20;
+    kdgains << 1, 1, 1, 1, 1;
+#endif
+```
 ##### Swing Leg
-src/common/SwingLegController.cppのsetDesiredJointState()
+src/common/SwingLegController.cppのswingLegController::initSwingLegController()
+```
+#ifdef BEAR_REAL
+    kpgains << 10, 10, 10, 10, 10;
+    kdgains << 0.5, 0.5, 0.5, 0.5, 0.5;
+#else
+    kpgains << 30, 30, 30, 30, 20;
+    kdgains << 1, 1, 1, 1, 1;
+#endif
+```
 ##### Stance Leg(支持脚)
-src/common/LegController.cpp にて決定している。が、単にゼロを入れているだけ。
-DFMで動かすにはここで設定が必要。
+ConvexMPC/ComvexMPCLocomotion.cppのConvexMPCLocomotion::ConvexMPCLocomotion()
+```
+#ifdef BEAR_REAL
+  kpgains << 0.5, 0.5, 0.5, 0.5, 0.5;
+  kdgains << 0.1, 0.1, 0.1, 0.1, 0.1;
+#else
+  kpgains << 0.5, 0.5, 0.5, 0.5, 0.5;
+  kdgains << 0.1, 0.1, 0.1, 0.1, 0.1;
+#endif
+```
+なお、pDes(角関節角度)はSwing Legの最後のデータが適用されている。
 
-```
-for (int j = 0; j < 5; j++){
-    cmd->motorCmd[i*5+j].tau = commands[i].tau(j);
-    cmd->motorCmd[i*5+j].q = commands[i].qDes(j);
-    cmd->motorCmd[i*5+j].dq = commands[i].qdDes(j);
-    cmd->motorCmd[i*5+j].Kp = commands[i].kpJoint(j,j);
-    cmd->motorCmd[i*5+j].Kd = commands[i].kdJoint(j,j);
-}
-```
 
 ### About IMU
 胴体に搭載したIMUからの姿勢データ、角速度データを使い、胴体位置、姿勢、足の座標、速度、角速度を得る。
@@ -171,19 +192,13 @@ for (int j = 0; j < 5; j++){
 本家Hector Simulationではrobot descriptionの基準姿勢とhector_control上のロボットの基準姿勢に差異があり、シミュレータ上のロボットは自動的に蹴り足となるようになっていたため（バグかも）であるが、本プログラムは実機適用を前提とするため、実機とコントローラのモデル差異はなくし、蹴り足をプログラムしている。
 以下のその個所を示す。
 #### src/common/swingLegController.cpp
+src/common/SwingLegController.cppのswingLegController::initSwingLegController()
 ```
-void swingLegController::computeFootDesiredPosition(){
-..
-..
 #ifdef debug
-            pDesFootWorld[2] -=0.0;
+    footStepIn = 0.0;
 #else
-            pDesFootWorld[2] -=0.02;
+    footStepIn = 0.02;
 #endif
-..
-..
-}
-
 ```
 ここで、遊脚の初期位置を地面から-2cmと設定することで蹴り足を実現している。（デバッグ設定では蹴り足を無効になる）
 

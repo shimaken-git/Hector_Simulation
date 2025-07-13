@@ -90,7 +90,15 @@ class Biped {
 class Biped {
     public:
         Biped() :
-            mass(4.000),
+            mass(4.000),   //simでは4.000じゃないとうまく歩けない。
+            //simで綺麗に歩く時の設定
+            //mass 4.000
+            //height 0.370(これは0.380でも大差ない)
+            //stance legのKp、Kdは0
+            //DFMを使った場合の歩く設定
+            //mass 5.000
+            //height 0.380
+            //stance leg Kp:0.5 Kd:0.1
             leg_yaw_offset_x(0.0),
             // leg_yaw_offset_y(0.080),     // wwlambda_r2
             leg_yaw_offset_y(0.053),     // wwlambda_r2
@@ -101,7 +109,7 @@ class Biped {
             hipLinkLength(0.0),
             thighLinkLength(0.153),
             calfLinkLength(0.153),
-            height(0.370) {}
+            height(0.380) {}
         Vec3<double> getHipYawLocation(int leg) const {
             checkLegIndex(leg);
             return Vec3<double>(leg_yaw_offset_x, leg == 0 ? leg_yaw_offset_y : -leg_yaw_offset_y, leg_yaw_offset_z);

@@ -79,25 +79,11 @@ class swingLegController : public LegIk {
         void computeFootDesiredPosition();
         void setDesiredJointState();
 
+        Vec5<double> kpgains;
+        Vec5<double> kdgains;
 
-
-        // constants can be adjusted if needed
-#ifdef _HECTOR_
-        const double footHeight = 0.15;        //足上げ高さ
-#else
-#ifdef _LAMBDA_
-        const double footHeight = 0.15;        //足上げ高さ
-#else
-#ifdef _LAMBDA_R2_
-#ifdef debug
-        const double footHeight = 0.06;        //足上げ高さ
-#else
-        const double footHeight = 0.15;        //足上げ高さ
-#endif
-
-#endif
-#endif
-#endif
+        double footHeight;
+        double footStepIn;
 
         // // utility functions
         // double clamp(double val, double minVal, double maxVal) {

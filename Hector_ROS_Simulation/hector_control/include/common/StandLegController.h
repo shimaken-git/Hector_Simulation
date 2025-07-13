@@ -63,6 +63,9 @@ class standLegController : public LegIk {
         void computeFootPlacement();
         void computeFootDesiredPosition();
         void setDesiredJointState();
+        Vec5<double> kpgains;
+        Vec5<double> kdgains;
+
     public:
         void updateState();
 

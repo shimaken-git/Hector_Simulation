@@ -2,11 +2,9 @@
 
 import rospy
 import rosparam
-from trajectory_msgs.msg import JointTrajectory
-from trajectory_msgs.msg import JointTrajectoryPoint
 from sensor_msgs.msg import JointState
 from sensor_msgs.msg import Joy
-from std_msgs.msg import Float64
+from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import String
 import numpy as np
 import time
@@ -15,6 +13,9 @@ import math
 from scipy.spatial.transform import Rotation
 from westwood_legged_msgs.msg import MotorCmd
 from westwood_legged_msgs.msg import MotorState
+import copy
+
+import matplotlib.pyplot as plt
 
 args = sys.argv
 
@@ -23,7 +24,9 @@ mtr_cmd = ""
 
 command = ""
 positions = {}   #dict
+velocities = {}
 joint_names = ["L_hip_joint", "L_hip2_joint", "L_thigh_joint", "L_calf_joint", "L_toe_joint", "R_hip_joint", "R_hip2_joint", "R_thigh_joint", "R_calf_joint", "R_toe_joint"]
+joint_index = [2, 1, 3, 0, 4, 7, 6, 8, 5, 9]
 indexlist = {}
 
 bfr_button6 = 0
@@ -33,10 +36,16 @@ joy_first = True
 
 motorState = []
 
-i = 0
-for n in joint_names:
-    indexlist[n] = i
-    i += 1
+angles = []
+
+#data log
+p = []
+v = []
+h = []
+obs_joint = ""
+
+for i, n in enumerate(joint_names):
+    indexlist[n] = joint_index[i]
 for nm in indexlist.keys():
     print(nm, indexlist[nm])
 
@@ -49,8 +58,8 @@ axis = [
     np.matrix([[0], [1], [0]]),
 ]
 
-limit_max = [0.2, 0.3, 1.5, 2.5, 1.5, 0.2, 0.3, 1.5, 2.5, 1.5]
-limit_min = [-0.2, -0.3, -1.5, -0.05, -1.5, -0.2, -0.3, -1.5, -0.05, -1.5]
+limit_max = [0.4, 0.7, 1.5, 2.5, 1.5, 0.4, 0.7, 1.5, 2.5, 1.5]
+limit_min = [-0.4, -0.7, -1.5, -0.05, -1.5, -0.4, -0.7, -1.5, -0.05, -1.5]
 
 joy_x = 0.0
 joy_y = 0.0
@@ -60,16 +69,16 @@ joy_ry = 0.0
 def joint_data_check(j_data):
     global limit_max, limit_min
     res = True
-    for i, j in enumerate(j_data):
-        if j > limit_max[i] or limit_min[i] > j:
+    for i in range(10):
+        if j_data[i] > limit_max[i] or limit_min[i] > j_data[i]:
             res = False
     return res
 
-def joint_publish(joint_l, joint_r, times, wait):
-    global idxlist, pub, joint_names
+def joint_publish(joint_, times, wait):
+    global pub, joint_names
 
     kp_start = 0
-    kp = [50, 50, 50, 50, 5, 50, 50, 50, 50, 5]
+    kp = [20, 20, 20, 40, 5, 20, 20, 20, 40, 5]
     kd = [2.0, 2.0, 2.0, 2.0, 0.5, 2.0, 2.0, 2.0, 2.0, 0.5]
     mtcmd = MotorCmd()
     mtcmd.dq = 0.0
@@ -77,20 +86,18 @@ def joint_publish(joint_l, joint_r, times, wait):
     mtcmd.Kp = 50.0
     mtcmd.Kd = 2.0
 
-    joint_ = joint_l + joint_r
     if joint_data_check(joint_):
         for c in range(times):
-            for a in range(10):
-                mtcmd.q = joint_[a]
-                mtcmd.Kp = kp_start + (kp[a] - kp_start) * (c+1) / times
-                mtcmd.Kd = kd[a] * (c+1) / times
-                # print(a, joint_[a], mtcmd.Kp)
-                pub[a].publish(mtcmd)
+            for i in range(10):
+                mtcmd.q = joint_[i]
+                mtcmd.Kp = kp_start + (kp[i] - kp_start) * (c+1) / times
+                mtcmd.Kd = kd[i] * (c+1) / times
+                pub[i].publish(mtcmd)
             time.sleep(wait)
     else:
         print("Joint Limit Over.")
-        for i, a in enumerate(joint_):
-            print(limit_max[i], ">", a, ">", limit_min[i])
+        for i in range(10):
+            print(limit_max[i], ">", joint_[i], ">", limit_min[i])
 
 def leg_pub(tgt_left_z, tgt_right_z, times, wait):
     tgt_y = 0.0
@@ -139,7 +146,7 @@ def leg_pub(tgt_left_z, tgt_right_z, times, wait):
     print("t_pos", t_pos)
     joint_r, res_r = ik_jac(rjoint, t_pos, t_rot)
 
-    joint_publish(joint_l, joint_r, times, wait)
+    joint_publish(joint_l + joint_r, times, wait)
 
 def joyCb(data):
     global command, bfr_data, joy_first, bfr_button6, bfr_button7, joy_y, joy_x, joy_rz, joy_ry
@@ -172,10 +179,11 @@ def joyCb(data):
     bfr_data = data
 
 def jointCb(data):
-    global positions
+    global positions, velocities
 
     for i in range(len(data.name)):
         positions[data.name[i]] = data.position[i]
+        velocities[data.name[i]] = data.velocity[i]
 
     # 一覧表示
     # for key in positions.keys():
@@ -223,6 +231,14 @@ def commandCb(data):
     rospy.loginfo("recieved msg %s", data.data)
     command = data.data
 
+def genesisAnglesCb(msg):
+    global angles
+    angles = msg.data
+    print("angles", angles)
+    angles_ = [angles[i] for i in joint_index]
+    print("angles_", angles_)
+    joint_publish(angles_, 1, 0)
+
 def leg_control():
     global command, pub, mtr_cmd
     rospy.init_node('lambda_leg_sample2')
@@ -253,6 +269,8 @@ def leg_control():
     rospy.Subscriber("/lambda_leg/R_calf_controller/state", MotorState, motorState8Cb)
     rospy.Subscriber("/lambda_leg/R_toe_controller/state", MotorState, motorState9Cb)
 
+    rospy.Subscriber("/genesis_angles", Float32MultiArray, genesisAnglesCb)
+
     # use command'jacob'
     # fb_coef = -30.0
     fb_coef = 0.0
@@ -263,6 +281,9 @@ def leg_control():
     step_height = 0.0
     dt = 0.0
     phase = 0.0
+    T = 0.0
+    stand_height = 0.25
+    test3_count = 0
 
     ljdefault = []
     rjdefault = []
@@ -282,6 +303,20 @@ def leg_control():
             mtcmd.Kp = 10.0
             mtcmd.Kd = 0.5
             for i in range(10):
+                pub[i].publish(mtcmd)
+            command = ""
+            jacob_first = True
+        elif command == "zero2" :
+            print("command", command)
+            mtcmd = MotorCmd()
+            mtcmd.q = 0.0
+            mtcmd.dq = 0.0
+            mtcmd.tau = 0.0
+            mtcmd.Kp = 10.0
+            mtcmd.Kd = 0.5
+            qs = [0.0, 0.0, -0.5, 0.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0]
+            for i in range(10):
+                mtcmd.q = qs[i]
                 pub[i].publish(mtcmd)
             command = ""
             jacob_first = True
@@ -336,9 +371,27 @@ def leg_control():
             pub[9].publish(mtcmd)
             command = ""
 
+        elif command == "test3" :
+            print("command", command)   #ステップ応答テスト・サンプル取得
+            p.clear()
+            v.clear()
+            obs_joint = "L_calf_joint"
+            test3_count = 100
+            mtcmd = MotorCmd()
+            # mtcmd.q = 0.7 # hip2
+            # mtcmd.q = -1.2 # thigh
+            mtcmd.q = 1.2 # calf
+            mtcmd.dq = 0.0
+            mtcmd.tau = 0.0
+            mtcmd.Kp = 20.0
+            mtcmd.Kd = 0.5
+            pub[3].publish(mtcmd)    # 1: hip2 2: thigh 3: calf
+            exec_cmd = command
+            command = ""
+
         elif command == "stand" :   # set stand pose    > stand y z pitch yw  [-0.1 > z > -0.32]
             command = ""
-            leg_pub(-0.25, -0.25, 10, 0.1)
+            leg_pub(-stand_height, -stand_height, 10, 0.1)
 
         elif command == "left" :   # set stand pose    > stand y z pitch yw  [-0.1 > z > -0.32]
             if exec_cmd == "":
@@ -356,6 +409,18 @@ def leg_control():
                 dt = 2.0 / 30.0
                 phase = 0.0
 
+        elif command == "step_motion":
+            exec_cmd = command
+            command = ""
+            p.clear()
+            v.clear()
+            h.clear()
+            obs_joint = "L_calf_joint"
+            step_height = 0.13
+            dt = 0.02
+            T = 0.6
+            phase = 0.0
+            
         elif command == "jacob" :
             """
             DirectForceModeを使い、位置制御とトルク制御を合わせる。
@@ -452,9 +517,60 @@ def leg_control():
             if phase > 1.0:
                 phase_ = 2.0 - phase
             print(phase_)
-            leg_pub(-0.3, -0.3 + step_height * phase_, 0, 1, 0)
+            leg_pub(-0.3, -0.3 + step_height * phase_, 1, 0)
             if phase >= 2.0:
                 exec_cmd = ""
+        elif exec_cmd == "test3":
+            p.append(positions[obs_joint])
+            v.append(velocities[obs_joint])
+            test3_count -= 1
+            if test3_count <= 0:
+                exec_cmd = ""
+                fig = plt.figure()
+                ax1 = fig.add_subplot(211)
+                ax2 = fig.add_subplot(212)
+                ax1.plot([t * 0.01 for t in range(len(p))], p)
+                ax2.plot([t * 0.01 for t in range(len(p))], v)
+                plt.show()
+                with open("step_response.txt","w") as o:
+                    for d in p:
+                        print(d, file=o) 
+                    for d in v:
+                        print(d, file=o) 
+                o.close()
+        elif exec_cmd == "step_motion":
+            phase += dt
+            h_ = 4 * step_height / T * np.abs(((phase - T/4) % T) - T/2) - step_height
+            if h_ > 0 :
+                leg_pub(-stand_height, -stand_height + h_, 1, 0)
+            else:
+                leg_pub(-stand_height - h_, -stand_height, 1, 0)
+            p.append(copy.deepcopy(positions))
+            v.append(copy.deepcopy(velocities))
+            h.append(h_)
+            if phase >= 1.2:
+                exec_cmd = ""
+                fig = plt.figure()
+                ax1 = fig.add_subplot(311)
+                ax2 = fig.add_subplot(312)
+                ax3 = fig.add_subplot(313)
+                ax1.plot([t * 0.02 for t in range(len(p))], [d[obs_joint] for d in p])
+                ax2.plot([t * 0.02 for t in range(len(p))], [d[obs_joint] for d in v])
+                ax3.plot([t * 0.02 for t in range(len(p))] ,h)
+                plt.show()
+                with open("walk_step_record.txt","w") as o:
+                    for d in p:
+                        for d_ in d.values():
+                            print(d_, end=',', file=o)
+                        print('', file=o)
+                    for d in v:
+                        for d_ in d.values():
+                            print(d_, end=',', file=o)
+                        print('', file=o) 
+                    for d in h:
+                        print(d, file=o) 
+                o.close()
+
 
         r.sleep()
 

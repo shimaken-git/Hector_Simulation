@@ -36,6 +36,13 @@ void FSMState_Standing::run()
     _data->_legController->updateData(_data->_lowState);
     tipRun();
     _data->_stateEstimator->run(); 
+    /*　    _data->_stateEstimator->run(); で何をやっているか
+    StateEstimatorContenerに登録されているEstimatorを順にrun()で更新する。
+    登録されているEstimatorは
+        stateEstimator->addEstimator<CheaterOrientationEstimator>();   
+        stateEstimator->addEstimator<CheaterPositionVelocityEstimator>();   
+    登録はmain.cppで行われる。
+    */
     _userValue = _data->_lowState->userValue;
     const StateEstimate *_result = _data->_stateEstimator->getResult_();
 
@@ -52,12 +59,18 @@ void FSMState_Standing::run()
         }else{
             std::cout << "position" << std::endl << _result->position.transpose() << std::endl;
         }
+    // }else{
+    //     stand.updateState();
     }
     stand.updateStandLeg();
-/*  updateStangLeg()の中身
+    std::cout << "_result->rBody " << std::endl << _result->rBody << std::endl;
+    std::cout << "_result->position " << _result->position.transpose() << std::endl;
+/*  updateStandLeg()の中身
     computeFootDesiredPosition();     ==> pFoot_b[]を確定させる
         pFoo_b[]の計算に向けて
-            Vec3<double> pDesFootWorld = footSwingTrajectory[foot].getPosition().cast<double>();
+            Vec3<double> pDesFootWorld = pFoot_w[foot];
+            Eigen::Vector3d hipWidthOffSet = data->_biped->getHipYawLocation(foot);
+            hipWidthOffSet(2) = 0.0;
             pFoot_b[foot] = seResult.rBody * (pDesFootWorld - seResult.position) - hipWidthOffSet ;  //原点を股関節に変換
                             ↑ワールド胴体姿勢 ↑ワールド座標の足位置
                                                               ↑ワールド胴体位置   ↑股関節オフセット

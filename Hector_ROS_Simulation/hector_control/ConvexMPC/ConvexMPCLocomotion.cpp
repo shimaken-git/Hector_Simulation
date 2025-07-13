@@ -36,6 +36,15 @@ ConvexMPCLocomotion::ConvexMPCLocomotion(double _dt, int _iterations_between_mpc
 #endif
 #endif
 #endif
+
+#ifdef BEAR_REAL
+  kpgains << 30, 30, 30, 30, 5;
+  kdgains << 2, 2, 2, 2, 0.5;
+#else
+  kpgains << 0., 0., 0., 0., 0.;
+  kdgains << 0., 0., 0., 0., 0.;
+#endif
+
   rpy_int[2] = 0;
   for (int i = 0; i < 2; i++)
     firstSwing[i] = true;
@@ -172,6 +181,13 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
       0, 10, 0,
       0, 0, 10;
   Kd_stance = 0*Kd;
+
+  // stance leg DFM用設定
+  Eigen::VectorXd kpgains(5);
+  kpgains << 0.5, 0.5, 0.5, 0.5, 0.5;
+  Eigen::VectorXd kdgains(5);
+  kdgains << 0.1, 0.1, 0.1, 0.1, 0.1;
+
   // gait
   // Vec2<double> contactStates = gait->getContactSubPhase();
   // Vec2<double> swingStates = gait->getSwingSubPhase();
@@ -220,6 +236,10 @@ void ConvexMPCLocomotion::run(ControlFSMData &data)
       data._legController->commands[foot].kdtoe = 0;
 
       data._legController->commands[foot].feedforwardForce = f_ff[foot];
+
+      data._legController->commands[foot].kpJoint = kpgains.asDiagonal();
+      data._legController->commands[foot].kdJoint = kdgains.asDiagonal();             
+
 
     }
     se_contactState[foot] = contactState;

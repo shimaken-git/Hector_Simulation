@@ -28,10 +28,42 @@ void swingLegController::initSwingLegController(ControlFSMData *data, Gait* gait
     updateFootPosition();
     
     for(int i = 0; i < nLegs; i++){
-      footSwingTrajectory[i].setHeight(0.1);
-      footSwingTrajectory[i].setInitialPosition(pFoot_w[i]);
-      footSwingTrajectory[i].setFinalPosition(pFoot_w[i]);
+        footSwingTrajectory[i].setHeight(0.1);
+        footSwingTrajectory[i].setInitialPosition(pFoot_w[i]);
+        footSwingTrajectory[i].setFinalPosition(pFoot_w[i]);
     }
+
+#ifdef BEAR_REAL
+    kpgains << 10, 10, 10, 10, 10;
+    kdgains << 0.5, 0.5, 0.5, 0.5, 0.5;
+#else
+    kpgains << 30, 30, 30, 30, 20;
+    kdgains << 1, 1, 1, 1, 1;
+#endif
+
+#ifdef debug
+    footStepIn = 0.0;
+#else
+    footStepIn = 0.02;
+#endif
+
+#ifdef _HECTOR_
+    footHeight = 0.15;        //足上げ高さ
+#else
+#ifdef _LAMBDA_
+    footHeight = 0.15;        //足上げ高さ
+#else
+#ifdef _LAMBDA_R2_
+#ifdef debug
+    footHeight = 0.06;        //足上げ高さ
+#else
+    footHeight = 0.15;        //足上げ高さ
+#endif
+
+#endif
+#endif
+#endif
+
     std::cout << "swingLegController initialize end." << std::endl;
 }
 
@@ -133,6 +165,8 @@ void swingLegController::computeFootPlacement(){
 
             double pfy_rel   =  0.45 * seResult.vWorld[1] * 0.5 * gait->_stance * _dtSwing +
                                 0.12  * (seResult.vWorld[1] - v_des_world[1]);
+            // pfx_rel = 0;
+            // pfy_rel = 0;
 #endif
 #endif
 #endif
@@ -175,13 +209,9 @@ void swingLegController::computeFootDesiredPosition(){
             // Eigen::Vector3d hipWidthOffSet = {-0.015, side*-0.057, 0.0}; // TODO: sync with Biped.h
             Eigen::Vector3d hipWidthOffSet = data->_biped->getHipYawLocation(foot);
             hipWidthOffSet(2) = 0.0;
-#ifdef debug
-            pDesFootWorld[2] -=0.0;
-#else
-            pDesFootWorld[2] -=0.02;
-#endif
+            pDesFootWorld[2] -=footStepIn;
             pFoot_b[foot] = seResult.rBody * (pDesFootWorld - seResult.position) - hipWidthOffSet ;  //原点を股関節に変換
-            // vFoot_b[foot] = seResult.rBody * (vDesFootWorld*0 - seResult.vWorld);             
+            // vFoot_b[foot] = seResult.rBody * (vDesFootWorld*0 - seResult.vWorld);   // original
             vFoot_b[foot] = seResult.rBody * (vDesFootWorld - seResult.vWorld);             
         }
     }    
@@ -208,18 +238,18 @@ void swingLegController::setDesiredJointState(){
             computeIK(pFoot_b[leg], data->_legController->commands[leg].qDes, leg);
             // std::cout << data->_legController->commands[leg].qDes << std::endl;
             data->_legController->commands[leg].qdDes = Eigen::Matrix<double, 5, 1>::Zero();
-#ifdef BEAR_REAL
-// #ifdef TORQUE_RESTRICT
-            Eigen::VectorXd kpgains(5);
-            kpgains << 10, 10, 10, 10, 10;
-            Eigen::VectorXd kdgains(5);
-            kdgains << 0.5, 0.5, 0.5, 0.5, 0.5;
-#else
-            Eigen::VectorXd kpgains(5);
-            kpgains << 30, 30, 30, 30, 20;
-            Eigen::VectorXd kdgains(5);
-            kdgains << 1, 1, 1, 1, 1;
-#endif
+// #ifdef BEAR_REAL
+// // #ifdef TORQUE_RESTRICT
+//             // Eigen::VectorXd kpgains(5);
+//             kpgains << 10, 10, 10, 10, 10;
+//             // Eigen::VectorXd kdgains(5);
+//             kdgains << 0.5, 0.5, 0.5, 0.5, 0.5;
+// #else
+//             // Eigen::VectorXd kpgains(5);
+//             kpgains << 30, 30, 30, 30, 20;
+//             // Eigen::VectorXd kdgains(5);
+//             kdgains << 1, 1, 1, 1, 1;
+// #endif
             data->_legController->commands[leg].feedforwardForce << 0, 0, 0 , 0 , 0 , 0;
             data->_legController->commands[leg].pDes = pFoot_b[leg];
             data->_legController->commands[leg].vDes = vFoot_b[leg];
@@ -229,12 +259,14 @@ void swingLegController::setDesiredJointState(){
             data->_legController->commands[leg].kdtoe = 0.1;              
         }else{
             //Ensure no interference with stance leg controller
-            Eigen::VectorXd kpgains(5);
-            kpgains << 0, 0, 0, 0, 0;
-            Eigen::VectorXd kdgains(5);
-            kdgains << 0.0, 0.0, 0.0, 0.0, 0.0;
-            data->_legController->commands[leg].kpJoint = kpgains.asDiagonal();
-            data->_legController->commands[leg].kdJoint = kdgains.asDiagonal(); 
+            // Eigen::VectorXd kpgains(5);
+            // kpgains << 0, 0, 0, 0, 0;
+            // Eigen::VectorXd kdgains(5);
+            // kdgains << 0.0, 0.0, 0.0, 0.0, 0.0;
+            // data->_legController->commands[leg].kpJoint = kpgains.asDiagonal();
+            // data->_legController->commands[leg].kdJoint = kdgains.asDiagonal(); 
+            data->_legController->commands[leg].kpJoint = Eigen::Matrix<double, 5, 5>::Zero();
+            data->_legController->commands[leg].kdJoint = Eigen::Matrix<double, 5, 5>::Zero(); 
             data->_legController->commands[leg].kpCartesian = Eigen::Matrix3d::Zero();
             data->_legController->commands[leg].kdCartesian = Eigen::Matrix3d::Zero();               
         }

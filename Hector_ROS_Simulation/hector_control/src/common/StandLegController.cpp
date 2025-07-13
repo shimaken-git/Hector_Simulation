@@ -24,6 +24,13 @@ void standLegController::initStandLegController(ControlFSMData *data, double dtS
     R_hipRollLocation = data->_biped->getHipRollLocation(1);
     seResult = data->_stateEstimator->getResult();
     updateFootPosition();
+#ifdef BEAR_REAL
+    kpgains << 20, 30, 30, 30, 10;
+    kdgains << 1.0, 1.0, 1.0, 1.0, 0.5;
+#else
+    kpgains << 30, 30, 30, 30, 20;
+    kdgains << 1, 1, 1, 1, 1;
+#endif
     
     std::cout << "standLegController initialize end." << std::endl;
 }
@@ -157,23 +164,22 @@ void standLegController::computeIK(const Vec3<double> &bodyPositionDesired, Eige
 
 void standLegController::setDesiredJointState(){
     for(int leg = 0; leg < nLegs; leg++){
-        if(true){   ////////////
-        // if(swingStates[leg] > 0){
+        if(true){
             computeIK(pFoot_b[leg], data->_legController->commands[leg].qDes, leg);
             // std::cout << data->_legController->commands[leg].qDes << std::endl;
             data->_legController->commands[leg].qdDes = Eigen::Matrix<double, 5, 1>::Zero();
-#ifdef BEAR_REAL
-// #ifdef TORQUE_RESTRICT
-            Eigen::VectorXd kpgains(5);
-            kpgains << 20, 20, 20, 20, 20;
-            Eigen::VectorXd kdgains(5);
-            kdgains << 1.0, 1.0, 1.0, 1.0, 1.0;
-#else
-            Eigen::VectorXd kpgains(5);
-            kpgains << 30, 30, 30, 30, 20;
-            Eigen::VectorXd kdgains(5);
-            kdgains << 1, 1, 1, 1, 1;
-#endif
+// #ifdef BEAR_REAL
+// // #ifdef TORQUE_RESTRICT
+//             Eigen::VectorXd kpgains(5);
+//             kpgains << 20, 20, 20, 20, 20;
+//             Eigen::VectorXd kdgains(5);
+//             kdgains << 1.0, 1.0, 1.0, 1.0, 1.0;
+// #else
+//             Eigen::VectorXd kpgains(5);
+//             kpgains << 30, 30, 30, 30, 20;
+//             Eigen::VectorXd kdgains(5);
+//             kdgains << 1, 1, 1, 1, 1;
+// #endif
             data->_legController->commands[leg].feedforwardForce << 0, 0, 0 , 0 , 0 , 0;
             data->_legController->commands[leg].pDes = pFoot_b[leg];
             data->_legController->commands[leg].vDes = vFoot_b[leg];

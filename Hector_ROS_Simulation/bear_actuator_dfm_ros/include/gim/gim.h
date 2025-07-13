@@ -27,7 +27,7 @@ class GIM{
         void EntryActuator(uint16_t id);
         void EntryZeropos(uint16_t id, float zeropos);
         int32_t connect();
-        void gim_close();
+        void can_close();
         int32_t gim_write(uint16_t id, uint8_t *data);
         int32_t gim_read(uint16_t *id, uint8_t *data, uint8_t *dlc);
         bool ping(uint16_t id);

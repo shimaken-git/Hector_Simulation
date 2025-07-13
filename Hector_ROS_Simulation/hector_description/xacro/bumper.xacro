@@ -56,12 +56,12 @@
     </gazebo>
 </xacro:macro>
 
-<xacro:property name="bumper_width" value="0.030"/>
+<xacro:property name="bumper_width" value="0.040"/>
 <xacro:property name="bumper_height" value="0.002"/>
-<xacro:property name="bumper_depth" value="0.030"/>
+<xacro:property name="bumper_depth" value="0.040"/>
 <xacro:property name="collision_avoidance" value="0.001"/>
-<xacro:property name="t_height" value="0.029"/>
-<xacro:property name="t_depth" value="0.100"/>
+<xacro:property name="t_height" value="0.037"/>
+<xacro:property name="t_depth" value="0.120"/>
 
 
 </robot>

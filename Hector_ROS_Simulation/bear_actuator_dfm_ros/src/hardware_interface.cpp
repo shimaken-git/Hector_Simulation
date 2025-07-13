@@ -20,7 +20,7 @@
 #include <cbear/bear_sdk.h>
 #include <cbear/bear_macro.h>
 #include <gim/gim.h>
-#include <mit/mit.h>
+#include <mit/mit.hpp>
 #include <unistd.h>
 #include <math.h>
 #include <eigen3/Eigen/Core>
@@ -37,7 +37,7 @@
 namespace bear_actuator_dfm_ros
 {
 HardwareInterface::HardwareInterface(ros::NodeHandle nh, ros::NodeHandle private_nh)
-: node_handle_(nh), priv_node_handle_(private_nh), bear_handle("", 8000000), torque_constant(0.35), kpChange(false)
+: node_handle_(nh), priv_node_handle_(private_nh), bear_handle("", 8000000), torque_constant(0.35), kpChange(false), kpkdFirst(true)
 {
   /************************************************************
   ** Initialize ROS parameters
@@ -72,6 +72,7 @@ HardwareInterface::~HardwareInterface()
   }
 
   bear_handle.disconnect();
+  gim_handle.can_close();
 }
 
 void HardwareInterface::makeAJmatrix()
@@ -136,14 +137,16 @@ void HardwareInterface::makeActuatorList()
   std::cout << "gimIdIndex_.size()=" << gimIdIndex_.size() << std::endl;
   for(auto &a : gimIdIndex_) std::cout << "ID "<< a.first << " index " << a.second << std::endl;
   
-  //make torque mode joint protection data
+  //make torque mode joint protection data, jointName
   for(auto i : robotJoint_){
     std::cout << i.first << std::endl;
     limitPangle.push_back(limitPangleMap[i.first]);
     limitMangle.push_back(limitMangleMap[i.first]);
     kd.push_back(kdMap[i.first]);
     protect.push_back(false);
+    protect_over_pos.push_back(0.0);
     counter_effort.push_back(0.0);
+    jointName.push_back(i.first);
   }
 
   // index = 0;
@@ -359,7 +362,7 @@ bool HardwareInterface::getActuatorInfo(const std::string yaml_file)
             break;
           }
         }
-        gim_handle.torque_offst[gimActuator_[name]];
+        gim_handle.torque_offset[gimActuator_[name]] = t_offset_;
       }
     }
 
@@ -491,7 +494,8 @@ bool HardwareInterface::initActuators(void)
       if(gim_handle.On((uint16_t)act.second, err) < 0){
         ROS_ERROR("GIM ACTUATOR ERROR %s %d", act.first.c_str(), act.second);
       }
-    } 
+    }
+    usleep(100000);
   }
   return true;
 }
@@ -592,6 +596,29 @@ void HardwareInterface::gimCalibration()
             break;
           }
         }
+#ifdef USE_MIT
+        gim_handle.On(id, err);
+        usleep(100000);
+        gim_handle.SetKpKd(id, 0, 0.5);
+        gim_handle.SetVelocity(id, rpm, 0, err);
+        usleep(200000);
+        while(loop){
+            if(gim_handle.GetVelocity(id,result) == 0) loop = false;
+        }
+        float limit = gim_handle.GetPosition(id, result);
+        gim_handle.SetVelocity(id, 0, 10, err);
+        float targetPos = limit - lmt;
+        printf("id[%d] present pos %f targetpos %f \r\n", id, limit, targetPos);
+        gim_handle.SetKpKd(id, 2.0, 0.5);
+        gim_handle.SetPosition(id, targetPos, 0, err);
+        sleep(1);
+        gim_handle.Off(id, err);
+        usleep(500000);
+        gim_handle.SetZeroPosition(id, err);
+        gim_handle.On(id, err);
+        usleep(100000);
+        gim_handle.SetPosition(id, 0, 10, err);
+#else
         gim_handle.On(id, err);
         gim_handle.SetVelocity(id, rpm, 10, err);
         sleep(1.0);
@@ -609,7 +636,7 @@ void HardwareInterface::gimCalibration()
         gim_handle.On(id, err);
         gim_handle.SetPosition(id, 0, 500, err);
         sleep(1.0);
-        // gim_handle.Off(id, err);
+#endif
       }
     }
 }
@@ -636,6 +663,7 @@ void HardwareInterface::read()
   //   id_array[id_cnt++] = (uint8_t)act.second;
   // }
 
+  // bear actuator read sequence
   std::vector<std::vector<float> > ret_vec_r;
   ret_vec_r = bear_handle.BulkRead(idList, read_add);
   result = true;
@@ -648,12 +676,6 @@ void HardwareInterface::read()
     ROS_ERROR("read error  bear_error=%d", err);
   }else{
     if(ret_vec_r.size() == idList.size()){
-      // std::cout << "read() " << std::endl;
-      // for(auto s : ret_vec_r) for(auto d : s) std::cout << d << std::endl;    ////////////////////////////////
-      // std::cout << std::endl;
-      // for(int i = 0; i < idList.size(); i++) std::cout << currentKp[i] << " " << currentKd[i] << ",";
-      // std::cout << std::endl;
-
       for(int i = 0; i < ret_vec_r.size(); i++){
         if((int)ret_vec_r[i][0] != idList[i]){
           ROS_WARN("id error %f != %d", ret_vec_r[i][0], idList[i]);
@@ -666,45 +688,42 @@ void HardwareInterface::read()
         get_current[idx] = ret_vec_r[i][3] * torque_constant;   //bearのtorque_constantはgear_ratioを含む
         uint8_t err = ret_vec_r[i][4];  // error code
       }
+      //Check that the KpKd change is complete
       if(kpChange){
         for(int i = 0; i < idList.size(); i++){
           int id = idList[i];
-          // std::cout << "i:" << i << " id:" << id << " idx:" << idIndex_[idList[i]] << std::endl;   ////////////////////////
           currentKp[i] = bear_handle.GetPGainDirectForce(id);
           currentKd[i] = bear_handle.GetDGainDirectForce(id);
-          ROS_INFO("currentKp %f , currentKd %f", currentKp[i], currentKd[i]);
+          ROS_INFO("id %d currentKp %f , currentKd %f", id, currentKp[i], currentKd[i]);
           if(bear_handle.GetErrorCode() & 0x7c){
             ROS_ERROR("ERROR CODE: %d", bear_handle.GetErrorCode());
           }
-          // int cmd_kp = (int)(joints_[a2jMap[i]].dfm[DFM_KP] * 10);
-          // int cmd_kd = (int)(joints_[a2jMap[i]].dfm[DFM_KD] * 10);
-          // int crt_kp = (int)(currentKp[i] * 10);
-          // int crt_kd = (int)(currentKd[i] * 10);
-          // if(cmd_kp != crt_kp || cmd_kd != crt_kd){
-          //   kpCheck = false;
-          //   ROS_INFO("kpCheck False %d %f %f %f %f", i, joints_[a2jMap[i]].dfm[DFM_KP], currentKp[i], joints_[a2jMap[i]].dfm[DFM_KD], currentKd[i]);
-          // }
         }
-        // if(kpCheck) kpChange = false;
         kpChange = false;
       }
     }else{
       ROS_ERROR("read data fault ret_vec_r:%ld idList:%ld", ret_vec_r.size(), idList.size());
     }
   }
+
+  // GIM actuator read sequence
   for(auto id : gimIdList){
     int32_t result;
     int idx = gimIdIndex_[id];
+#ifdef USE_MIT
+    // gim_handle.GetInfo(id, result);  //通信コストに問題なければ最新情報が取得できる
+    get_position[idx] = gim_handle.present_position[id];
+    get_velocity[idx] = gim_handle.present_velocity[id];
+    get_current[idx] = gim_handle.present_torque[id] * gim_handle.torque_constant * gim_handle.gear_ratio;
+#else
     get_position[idx] = gim_handle.GetPosition(id, result);
     get_velocity[idx] = gim_handle.GetVelocity(id, result);
     get_current[idx] = gim_handle.GetTorque(id, result) * gim_handle.torque_constant * gim_handle.gear_ratio;
+#endif
   }
   for(uint8_t idx = 0; idx < act_size; idx++){
-    // Position
     joints_[idx].position = convertActuator2Joint(idx, get_position);
-    // Velocity
     joints_[idx].velocity = convertActuator2Joint(idx, get_velocity);
-    // Effort
     joints_[idx].effort = convertActuator2Joint(idx, get_current);
     // ROS_INFO("[%d] pos %f vel %f cur %f", idx, joints_[idx].position, joints_[idx].velocity, joints_[idx].effort);
   }
@@ -712,15 +731,17 @@ void HardwareInterface::read()
     for(uint8_t idx = 0; idx < act_size; idx++){
       if(protect[idx]){
         counter_effort[idx] = -kd[idx] * joints_[idx].velocity;
-        ROS_ERROR("joint[%d] EFFORT PROTECTION ALREADY ON", idx);
+        ROS_ERROR("joint[%d] [[%s]] EFFORT PROTECTION ALREADY ON : %f", idx, jointName[idx].c_str(), protect_over_pos[idx]);
       }
       if(joints_[idx].dfm[DFM_EFT] != 0.0){
         // ROS_INFO("joint[%d] effort = %f", idx, joints_[idx].dfm[2]);
         if(joints_[idx].position > limitPangle[idx]){
           protect[idx] = true;
+          protect_over_pos[idx] = joints_[idx].position;
           ROS_ERROR("joint[%d] EFFORT PROTECTION ON %f > %f", idx, joints_[idx].position ,limitPangle[idx]);
         }else if(joints_[idx].position < limitMangle[idx]){
           protect[idx] = true;
+          protect_over_pos[idx] = joints_[idx].position;
           ROS_ERROR("joint[%d] EFFORT PROTECTION ON %f < %f", idx, joints_[idx].position ,limitMangle[idx]);
         // }else{
         //   ROS_INFO("joint[%d] angle within range %f <= %f <= %f", idx, limitMangle[idx], joints_[idx].position ,limitPangle[idx]);
@@ -731,9 +752,10 @@ void HardwareInterface::read()
       }
     }
   }
+
   if(first){
     for(uint8_t idx = 0; idx < act_size; idx++){
-      joints_[idx].dfm[0] = joints_[idx].position;
+      joints_[idx].dfm[DFM_POS] = joints_[idx].position;
     }
     first = false;
   }
@@ -773,8 +795,7 @@ void HardwareInterface::write()
   actuator_eft_data = j2aMat * effort_data;
   // std::cout << "actuator_pos_data " << actuator_pos_data << std::endl;
 
-  //Kp, Kd は複合関節の設定は同じという前提でa2jMapにて代表とするジョイントのKp,Kdを適用する。
-
+  // bear actuator write sequence
   if (interface_ ==  "dfm"){
     std::vector<std::vector<float>> data;
     for(auto id : idList){
@@ -785,13 +806,6 @@ void HardwareInterface::write()
       _data.push_back(actuator_eft_data(idx, 0) / torque_constant);
       data.push_back(_data);
     }
-    // for(int id = 0; id < data.size(); id++){           ///////////////////////////////////
-    //   std::cout << "id:" << id << " ";
-    //   for(auto b : data[id]){
-    //     std::cout << b << " ";
-    //   }
-    // }
-    // std::cout << std::endl;
     if(!bear_handle.BulkWrite(idList, write_add, data)){
       ROS_ERROR("BEAR ACTUATOR WRITE ERROR");
       ROS_ERROR("ERROR CODE: %d", bear_handle.GetErrorCode());
@@ -800,31 +814,33 @@ void HardwareInterface::write()
     }
     //恐らく、BulkRead, BulkWriteではconfig registerの読み書きができない。
     //Kp、Kdの更新についてはregister個別に送受信するしかなさそう。
+    //Kp, Kd は複合関節の設定は同じという前提でa2jMapにて代表とするジョイントのKp,Kdを適用する。
     bool kpfirst = true;
     for(auto id : idList){
       int idx = idIndex_[id];
-      if(currentKp[idx] != joints_[a2jMap[idx]].dfm[DFM_KP] || currentKd[idx] != joints_[a2jMap[idx]].dfm[DFM_KD]){
+      if(currentKp[idx] != joints_[a2jMap[idx]].dfm[DFM_KP] || currentKd[idx] != joints_[a2jMap[idx]].dfm[DFM_KD] || kpkdFirst){
         if(kpfirst){
-          bear_handle.GetID(idList[0]);
-          // bear_handle.GetPresentPosition(idList[0]);
+          bear_handle.GetID(idList[0]);   // dummy read  resister書き込みがエラーを誘発するらしいことに対するwork around
           kpfirst = false;
         }
-        std::cout << idx << " " << currentKp[idx] << " " << joints_[a2jMap[idx]].dfm[DFM_KP] << " " << currentKd[idx] << " " << joints_[a2jMap[idx]].dfm[DFM_KD] << std::endl;    ////////////////////////////
         if(!bear_handle.SetPGainDirectForce(id, joints_[a2jMap[idx]].dfm[DFM_KP])){
           ROS_ERROR("BEAR ACTUATOR WRITE ERROR");
           ROS_ERROR("ERROR CODE: %d", bear_handle.GetErrorCode());
         }else{
-          ROS_INFO("Kp change %d:%f => %f", id, currentKp[idx], joints_[a2jMap[idx]].dfm[DFM_KP]);
+          if(kpkdFirst) ROS_INFO("id: %d Kp first write: %f", id, joints_[a2jMap[idx]].dfm[DFM_KP]);
+          else          ROS_INFO("id: %d Kp change: %f => %f", id, currentKp[idx], joints_[a2jMap[idx]].dfm[DFM_KP]);
         }
         if(!bear_handle.SetDGainDirectForce(id, joints_[a2jMap[idx]].dfm[DFM_KD])){
           ROS_ERROR("BEAR ACTUATOR WRITE ERROR");
           ROS_ERROR("ERROR CODE: %d", bear_handle.GetErrorCode());
         }else{
-          ROS_INFO("Kp change %d:%f => %f", id, currentKd[idx], joints_[a2jMap[idx]].dfm[DFM_KD]);
+          if(kpkdFirst) ROS_INFO("id: %d Kd first write: %f", id, joints_[a2jMap[idx]].dfm[DFM_KD]);
+          else          ROS_INFO("id: %d Kd change: %f => %f", id, currentKd[idx], joints_[a2jMap[idx]].dfm[DFM_KD]);
         }
         kpChange = true;
       }
     }
+    if(kpkdFirst) kpkdFirst = false;
   }
   else if (interface_ ==  "position"){
     std::vector<std::vector<float>> data;
@@ -852,6 +868,7 @@ void HardwareInterface::write()
       ROS_ERROR("BEAR ACTUATOR WRITE ERROR");
     }
   }
+  // GIM actuator write sequence
   uint8_t err;
   if (interface_ == "dfm"){
     double tc = gim_handle.torque_constant * gim_handle.gear_ratio;
@@ -859,6 +876,15 @@ void HardwareInterface::write()
       int idx = gimIdIndex_[id];
       // std::cout << "gim idx:" << idx << " position:" << actuator_data(idx, 0) << std::endl;
       int refId = a2jMap[idx];
+#ifdef USE_MIT
+      int32_t error;
+      float kp_ = joints_[a2jMap[idx]].dfm[DFM_KP];
+      float kd_ = joints_[a2jMap[idx]].dfm[DFM_KD];
+      gim_handle.SetKpKd(id, kp_, kd_);
+      if(gim_handle.SetCommand(id, actuator_pos_data(idx, 0), actuator_vel_data(idx, 0), actuator_eft_data(idx, 0), kp_, kd_, error) < 0){
+        ROS_ERROR("GIM ACTUATOR WRITE ERROR %d err:%d", id, error);
+      }
+#else
       if(joints_[a2jMap[idx]].dfm[DFM_KP] > 0){   // position control
         if(gim_handle.SetPosition((uint16_t)id, actuator_pos_data(idx, 0), 10, err) < 0){
           ROS_ERROR("GIM ACTUATOR WRITE ERROR %d err:%d", id, err);
@@ -868,6 +894,7 @@ void HardwareInterface::write()
           ROS_ERROR("GIM ACTUATOR WRITE ERROR %d err:%d", id, err);
         }
       }
+#endif
     }
   }
   else if (interface_ == "position"){
@@ -904,6 +931,7 @@ void HardwareInterface::torque(bool torque)
         ROS_ERROR("GIM ACTUATOR ERROR %d", id);
       }
     }
+    usleep(100000);
   }else{
     for (auto const& id : idList){
       if(!bear_handle.SetTorqueEnable(id, 0)){
@@ -914,6 +942,7 @@ void HardwareInterface::torque(bool torque)
       if(gim_handle.Off(id, err) < 0){
         ROS_ERROR("GIM ACTUATOR ERROR %d", id);
       }
+      usleep(100000);
     }
   }
 }

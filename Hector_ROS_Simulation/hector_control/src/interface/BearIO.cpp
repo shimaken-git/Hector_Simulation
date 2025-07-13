@@ -133,7 +133,6 @@ void BearIO::StateCallback(const sensor_msgs::Imu & msg)
 
 void BearIO::LhipCallback(const westwood_legged_msgs::MotorStateConstPtr& msg)
 {
-    ROS_INFO("LhipCallback %f", msg->q);
     _highState.motorState[0].mode = msg->mode;
     _highState.motorState[0].q = msg->q;
     _highState.motorState[0].dq = msg->dq;
@@ -142,7 +141,6 @@ void BearIO::LhipCallback(const westwood_legged_msgs::MotorStateConstPtr& msg)
 
 void BearIO::Lhip2Callback(const westwood_legged_msgs::MotorStateConstPtr& msg)
 {
-    ROS_INFO("L2hipCallback %f", msg->q);
     _highState.motorState[1].mode = msg->mode;
     _highState.motorState[1].q = msg->q;
     _highState.motorState[1].dq = msg->dq;

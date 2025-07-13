@@ -61,5 +61,5 @@ int main(int argc, char *argv[])
         sleep(1.0);
         gimDriver.Off(id, err);
     }
-   gimDriver.gim_close();
+   gimDriver.can_close();
 }

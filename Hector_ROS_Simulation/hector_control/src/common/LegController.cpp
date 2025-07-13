@@ -64,18 +64,21 @@ void LegController::updateCommand(LowlevelCmd* cmd){
 
     for (int i = 0; i < 2; i++){
         Vec6<double> footForce = commands[i].feedforwardForce;
-        Vec5<double> legtau = data[i].J_force_moment.transpose() * footForce; // force moment from stance leg
+        double dfm_ratio = 0.8;   // DFM使用時にトルクを加減する係数
+        Vec5<double> legtau = data[i].J_force_moment.transpose() * footForce * dfm_ratio; // force moment from stance leg
 
-        // legtau[4] *= 0.5;    //足首がくねるを防ぐために足首トルクを半分にしてみた。
         std::cout << "leg:" << i << " tau: " << legtau[0] << " " << legtau[1] << " " << legtau[2] << " " << legtau[3] << " " << legtau[4] << std::endl;
         outputfile << "leg:" << i << " tau: " << legtau[0] << " " << legtau[1] << " " << legtau[2] << " " << legtau[3] << " " << legtau[4] << " ";
 
+        // std::cout << "leg:" << i << std::endl;
+        // std::cout << commands[i].kpJoint << std::endl;
+        // std::cout << commands[i].kdJoint << std::endl;
 #ifdef BEAR_REAL
 #ifdef TORQUE_RESTRICT
         double torque_limit = 3.0;
         for(int i = 0; i < 5; i++){
-            legtau[i] = 0.0;
-            // legtau[i] *= 0.9;
+            // legtau[i] = 0.0;
+            // legtau[i] *= 0.5;
             // if(legtau[i] > torque_limit) legtau[i] = torque_limit;
             // if(legtau[i] < -torque_limit) legtau[i] = -torque_limit;
         }
@@ -122,7 +125,7 @@ void LegController::updateCommand(LowlevelCmd* cmd){
         
    
     }
-    outputfile << std::endl;
+    // outputfile << std::endl;
    
 }
 
@@ -156,8 +159,7 @@ void computeLegJacobianAndPosition(Biped& _biped, Vec5<double>& q, Mat65<double>
     //J0を原点とする座標計算
     double l1 = 0.0;     //z
     double l2 = 0.0;     //x
-    // double l3 = 0.007;   //y  なんだっけ。p()に関与しないのでJ0より上
-    double l3 = 0.009;   //leg_roll_offset_y
+    double l3 = 0.007;   //leg_roll_offset_y
     double l4 = 0.0;     //y
     double l5 = 0.153;   //thighLinkLength
     double l6 = 0.153;   //calfLinkLength
@@ -336,10 +338,10 @@ void computeHeelToePosition(Biped& _biped, Vec5<double>& q, Vec3<double>* toe, V
     //trunk(imu)原点
     Vec3<double> hipyaw = _biped.getHipYawLocation(leg);
     Vec3<double> hiproll = _biped.getHipRollLocation(leg);
-    double l1 = hipyaw[1];  // y   leg_roll_offset_y _bipedでは0.0だが、
-    double l2 = hipyaw[2];  // z
-    double l3 = hiproll[1]; // y   
-    double l4 = hiproll[2]; // z   leg_yaw_offset_z xacroだと-0.085 _bipedでは-0.091
+    double l1 = hipyaw[1];  // y   leg_yaw_offset_y
+    double l2 = hipyaw[2];  // z   leg_yaw_offset_z xacroだと-0.085 _bipedでは-0.091
+    double l3 = hiproll[1]; // y   leg_roll_offset_y
+    double l4 = hiproll[2]; // z   leg_roll_offset_z
     double l5 = 0.153;      // z   = _biped.thighLinkLength;
     double l6 = 0.153;      // z   = _biped.calfLinkLength;
     double l7 = 0.04;       // z   足首から足裏

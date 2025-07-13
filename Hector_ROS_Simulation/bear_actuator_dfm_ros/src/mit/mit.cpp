@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h>
 #include <cstdint>
+#include <iostream>
 
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -11,7 +12,7 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 #include <math.h>
-#include "mit.hpp"
+#include <mit/mit.hpp>
 
 #define CAN_NAME "can0"
 
@@ -27,7 +28,7 @@ MIT::MIT():can_name(CAN_NAME), torque_constant(0.066), gear_ratio(10)
 
 }
 
-void SetCanDevice(std::string can_name_)
+void MIT::SetCanDevice(std::string can_name_)
 {
     can_name = can_name_;
 }
@@ -36,6 +37,7 @@ void MIT::EntryActuator(uint8_t id)
 {
     ids.push_back(id);
     zeropos.push_back(0);
+    torque_status[id] = false;
 }
 
 void MIT::EntryZeropos(uint8_t id, float pos)
@@ -77,7 +79,7 @@ int32_t MIT::connect()
     return 1;
 }
 
-void MIT::mit_close()
+void MIT::can_close()
 {
     close(s);
 }
@@ -154,8 +156,8 @@ void MIT::decode_data(uint8_t id, uint8_t *data)
     uint16_t spd = data[3] * 16 + (data[4] >> 4);
     uint16_t trq = (data[4] & 0x0f) * 256 + data[5];
     present_position[id] = pos * 25.0 / 65535.0 - 12.5;
-    present_velocity[id] = spd * 130.0 / 4095.0 - 65.0;
-    present_torque[id] = trq * (100.0 / 4095.0 - 50.0) * torque_constant * gear_ratio;
+    present_velocity[id] = (spd + 1) * 130.0 / 4096.0 - 65.0;
+    present_torque[id] = (trq + 1) * (100.0 / 4096.0 - 50.0) * torque_constant * gear_ratio;
 }
 
 uint8_t MIT::GetError(uint16_t id, int8_t &rdata)
@@ -197,6 +199,7 @@ int32_t MIT::On(uint16_t id, uint8_t &err)
     if(result != 1) return result;
     result = mit_read(&rid, data, &dlc);
     decode_data(id, data);
+    torque_status[id] = true;
     return result;
 }
 
@@ -211,10 +214,11 @@ int32_t MIT::Off(uint16_t id, uint8_t &err)
     if(result != 1) return result;
     result = mit_read(&rid, data, &dlc);
     decode_data(id, data);
+    torque_status[id] = false;
     return result;
 }
 
-int32_t MIT::SetCommand(uint16_t id, float position, float velocity, float torque, float kp, float kd)
+int32_t MIT::SetCommand(uint16_t id, float position, float velocity, float torque, float kp, float kd, int32_t &err)
 {
     uint32_t ipos, ispd, itrq, ikp, ikd;
     union a cnv;
@@ -251,37 +255,37 @@ int32_t MIT::SetCommand(uint16_t id, float position, float velocity, float torqu
      return result;
 }
 
-int32_t MIT::SetPosition(uint16_t id, float position, uint8_t &err)
+int32_t MIT::SetPosition(uint16_t id, float position, uint32_t dur, uint8_t &err)
 {
     uint16_t rid;
     uint8_t dlc;
-    int32_t result;
+    int32_t result, result_;
 
-    result = SetCommand(id, position, 0, 0, kp[id], kd[id]);
+    result = SetCommand(id, position, 0, 0, kp[id], kd[id], result_);
      return result;
 }
 
-int32_t MIT::SetVelocity(uint16_t id, float velocity, uint8_t &err)
+int32_t MIT::SetVelocity(uint16_t id, float velocity, uint32_t dur, uint8_t &err)
 {
     uint16_t rid;
     uint8_t dlc;
-    int32_t result;
+    int32_t result, result_;
 
-    result = SetCommand(id, 0, velocity, 0, 0, kd[id]);
+    result = SetCommand(id, 0, velocity, 0, 0, kd[id], result_);
      return result;
 }
 
-int32_t MIT::SetTorque(uint16_t id, float torque, uint8_t &err)
+int32_t MIT::SetTorque(uint16_t id, float torque, uint32_t dur, uint8_t &err)
 {
     uint16_t rid;
     uint8_t dlc;
-    int32_t result;
+    int32_t result, result_;
 
-    result = SetCommand(id, 0, 0, torque / (torque_constant * gear_ratio), 0, 0);
+    result = SetCommand(id, 0, 0, torque / (torque_constant * gear_ratio), 0, 0, result_);
      return result;
 }
 
-void MIT::SetParam(uint16_t id, float _kp, float _kd)
+void MIT::SetKpKd(uint16_t id, float _kp, float _kd)
 {
     kp[id] = _kp;
     kd[id] = _kd;
