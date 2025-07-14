@@ -34,8 +34,7 @@ void LegIk::computeIK_(const Vec3<double> &bodyPositionDesired, Eigen::Matrix<do
 #else
 #if defined(_LAMBDA_) || defined(_LAMBDA_R2_)
         double l = 0.153;
-        Eigen::Vector3d hip_roll(L_hipRollLocation[0], L_hipRollLocation[0], L_hipRollLocation[2]-0.03);
-                                                                                                                  // -0.03 足の高さ分かな？
+        Eigen::Vector3d hip_roll(L_hipRollLocation[0], L_hipRollLocation[0], L_hipRollLocation[2]-FootHeight);
         Eigen::Vector3d foot_des_to_hip_roll = pFoot_des_b - hip_roll; //in hip roll frame
         double distance_3D = foot_des_to_hip_roll.norm();
         double distance_2D_yOz = std::sqrt(std::pow(foot_des_to_hip_roll[1], 2) + std::pow(foot_des_to_hip_roll[2], 2));

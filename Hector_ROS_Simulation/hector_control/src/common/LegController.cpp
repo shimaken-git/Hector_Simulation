@@ -159,12 +159,12 @@ void computeLegJacobianAndPosition(Biped& _biped, Vec5<double>& q, Mat65<double>
     //J0を原点とする座標計算
     double l1 = 0.0;     //z
     double l2 = 0.0;     //x
-    double l3 = 0.007;   //leg_roll_offset_y
+    double l3 = _biped.leg_roll_offset_y;   //leg_roll_offset_y
     double l4 = 0.0;     //y
-    double l5 = 0.153;   //thighLinkLength
-    double l6 = 0.153;   //calfLinkLength
-    double l7 = 0.04;    //足首から足裏まで
-    double l9 = 0.053;   //leg_yaw_offset_y    //J0原点なので使わない
+    double l5 = _biped.thighLinkLength;   //thighLinkLength
+    double l6 = _biped.calfLinkLength;   //calfLinkLength
+    double l7 = _biped.foot_height;    //足首から足裏まで
+    double l9 = _biped.leg_yaw_offset_y;   //leg_yaw_offset_y    //J0原点なので使わない
 
 #endif
 #endif
@@ -336,17 +336,15 @@ void computeLegJacobianAndPosition(Biped& _biped, Vec5<double>& q, Mat65<double>
 void computeHeelToePosition(Biped& _biped, Vec5<double>& q, Vec3<double>* toe, Vec3<double>* heel, int leg)
 {
     //trunk(imu)原点
-    Vec3<double> hipyaw = _biped.getHipYawLocation(leg);
-    Vec3<double> hiproll = _biped.getHipRollLocation(leg);
-    double l1 = hipyaw[1];  // y   leg_yaw_offset_y
-    double l2 = hipyaw[2];  // z   leg_yaw_offset_z xacroだと-0.085 _bipedでは-0.091
-    double l3 = hiproll[1]; // y   leg_roll_offset_y
-    double l4 = hiproll[2]; // z   leg_roll_offset_z
-    double l5 = 0.153;      // z   = _biped.thighLinkLength;
-    double l6 = 0.153;      // z   = _biped.calfLinkLength;
-    double l7 = 0.04;       // z   足首から足裏
-    double l8 = 0.05;       // x
-    double l9 = 0.05;       // x
+    double l1 = _biped.leg_yaw_offset_y;
+    double l2 = _biped.leg_yaw_offset_z;  // z   leg_yaw_offset_z xacroだと-0.085 _bipedでは-0.091
+    double l3 = _biped.leg_roll_offset_y; // y   leg_roll_offset_y
+    double l4 = _biped.leg_roll_offset_z; // z   leg_roll_offset_z
+    double l5 = _biped.thighLinkLength;      // z   = _biped.thighLinkLength;
+    double l6 = _biped.calfLinkLength;      // z   = _biped.calfLinkLength;
+    double l7 = _biped.foot_height;       // z   足首から足裏
+    double l8 = _biped.ankle_to_toe;       // x
+    double l9 = _biped.ankle_to_heel;       // x
 
     // q(2) = q(2) + 0.3*3.14159;    //重複しての変換になるのでここではいじらない
     // q(3) = q(3) - 0.6*3.14159;

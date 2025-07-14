@@ -22,6 +22,7 @@ void standLegController::initStandLegController(ControlFSMData *data, double dtS
     L_hipRollLocation = data->_biped->getHipRollLocation(0);
     R_hipYawLocation = data->_biped->getHipYawLocation(1);
     R_hipRollLocation = data->_biped->getHipRollLocation(1);
+    FootHeight = data->_biped->foot_height;
     seResult = data->_stateEstimator->getResult();
     updateFootPosition();
 #ifdef BEAR_REAL

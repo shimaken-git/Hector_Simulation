@@ -109,6 +109,9 @@ class Biped {
             hipLinkLength(0.0),
             thighLinkLength(0.153),
             calfLinkLength(0.153),
+            foot_height(0.04),
+            ankle_to_toe(0.06),
+            ankle_to_heel(0.06),
             height(0.380) {}
         Vec3<double> getHipYawLocation(int leg) const {
             checkLegIndex(leg);
@@ -119,8 +122,13 @@ class Biped {
             checkLegIndex(leg);
             return Vec3<double>(leg_roll_offset_x, leg == 0 ? leg_roll_offset_y : -leg_roll_offset_y, leg_roll_offset_z);
         }
+
         const double height;
         const double mass;
+        const double hipLinkLength, thighLinkLength, calfLinkLength;
+        const double leg_yaw_offset_x, leg_yaw_offset_y, leg_yaw_offset_z;
+        const double leg_roll_offset_x, leg_roll_offset_y, leg_roll_offset_z;
+        const double foot_height, ankle_to_toe, ankle_to_heel;
 
     private:
         void checkLegIndex(int leg) const {
@@ -129,9 +137,6 @@ class Biped {
             }
         }
 
-        const double hipLinkLength, thighLinkLength, calfLinkLength;
-        const double leg_yaw_offset_x, leg_yaw_offset_y, leg_yaw_offset_z;
-        const double leg_roll_offset_x, leg_roll_offset_y, leg_roll_offset_z;
     };
 #endif
 #endif
