@@ -55,14 +55,16 @@ void FSMState_Standing::run()
     if(first){
         if(_result->position(2) != 0.0){
             stand.updateState();
+            stand.updateStandLeg();
             first = false;
         }else{
             std::cout << "position" << std::endl << _result->position.transpose() << std::endl;
         }
-    // }else{
-    //     stand.updateState();
+    }else{
+        stand.updateState();
     }
-    stand.updateStandLeg();
+    stand.updateLegState();
+    // stand.updateStandLeg();
     std::cout << "_result->rBody " << std::endl << _result->rBody << std::endl;
     std::cout << "_result->position " << _result->position.transpose() << std::endl;
 /*  updateStandLeg()の中身

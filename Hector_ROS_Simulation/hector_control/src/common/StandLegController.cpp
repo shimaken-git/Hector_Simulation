@@ -23,13 +23,14 @@ void standLegController::initStandLegController(ControlFSMData *data, double dtS
     R_hipYawLocation = data->_biped->getHipYawLocation(1);
     R_hipRollLocation = data->_biped->getHipRollLocation(1);
     FootHeight = data->_biped->foot_height;
+    Height = data->_biped->height;
     seResult = data->_stateEstimator->getResult();
     updateFootPosition();
 #ifdef BEAR_REAL
     kpgains << 20, 30, 30, 30, 10;
     kdgains << 1.0, 1.0, 1.0, 1.0, 0.5;
 #else
-    kpgains << 30, 30, 30, 30, 20;
+    kpgains << 20, 20, 20, 20, 20;     //膝の垂れを再現するためにkpgainを落とした
     kdgains << 1, 1, 1, 1, 1;
 #endif
     
@@ -49,6 +50,18 @@ void standLegController::updateStandLeg(){
     setDesiredJointState();
 }
 
+void standLegController::updateLegState(){
+    std::cout << "updateLegState()" << std::endl;
+    for(int i = 0; i < nLegs; i++){
+        std::cout << "data[" << i << "].p = " <<  data->_legController->data[i].p.transpose() << std::endl;
+        std::cout << "qDes: " << data->_legController->commands[i].qDes[3] << " q: " << data->_legController->data[i].q[3] << std::endl;
+        double _p = ori::rotationMatrixToRPY(seResult.rBody)[1];
+        std::cout << "pitch " << _p << std::endl;
+        if(fabs(_p) < 0.5)
+            data->_legController->commands[i].qDes[3] += _p * 0.001;
+    }
+}
+
 /******************************************************************************************************/
 /******************************************************************************************************/
 
@@ -65,84 +78,17 @@ void standLegController::updateFootPosition(){
 /******************************************************************************************************/
 /******************************************************************************************************/
 
-void standLegController::computeFootPlacement(){
-
-    auto &stateCommand = data->_desiredStateCommand;
-    Vec3<double> v_des_robot(stateCommand->data.stateDes[6], stateCommand->data.stateDes[7],0);
-    Vec3<double> v_des_world;
-
-    //standLegの着地位置の計算
-    for(int foot = 0; foot < nLegs; foot++){
-        // if(swingStates[foot] > 0){
-
-            //希望胴体速度
-            v_des_world = seResult.rBody.transpose() * v_des_robot; 
-            // footSwingTrajectory[foot].setHeight(footHeight);               //足上げ高さ設定
-
-            //swingLeg着地時の予想胴体位置
-            Vec3<double> Pf;
-            // Vec3<double> Pf = seResult.position + seResult.rBody.transpose() * (data->_biped->getHipYawLocation(foot)) + seResult.vWorld * swingTimes[foot];    // velocity * time = position   --->なのでマイナス値はおかしい
-            // std::cout << "swingStates[" << foot << "] " << swingStates[foot] << " " << swingTimes[foot] << std::endl;
-
-            //胴体倒れ込みに対する補正値
-            double p_rel_max =  0.3;
-            //original
-            // double pfx_rel   =  1.75 * seResult.vWorld[0] * 0.5 * gait->_stance * _dtSwing +
-                                // 0.1  * (seResult.vWorld[0] - v_des_world[0]);
-            // double pfy_rel   =  1.75 * seResult.vWorld[1] * 0.5 * gait->_stance * _dtSwing +
-                                // 0.1  * (seResult.vWorld[1] - v_des_world[1]);
-
-            double pfx_rel, pfy_rel;
-// #ifdef _HECTOR_
-//             double pfx_rel   =  0.45 * seResult.vWorld[0] * 0.5 * gait->_stance * _dtSwing +
-//                                 0.12  * (seResult.vWorld[0] - v_des_world[0]);
-
-//             double pfy_rel   =  0.45 * seResult.vWorld[1] * 0.5 * gait->_stance * _dtSwing +
-//                                 0.12  * (seResult.vWorld[1] - v_des_world[1]);
-// #else
-// #ifdef _LAMBDA_
-//             double pfx_rel   =  0.45 * seResult.vWorld[0] * 0.5 * gait->_stance * _dtSwing +
-//                                 0.12  * (seResult.vWorld[0] - v_des_world[0]);
-
-//             double pfy_rel   =  0.45 * seResult.vWorld[1] * 0.5 * gait->_stance * _dtSwing +
-//                                 0.12  * (seResult.vWorld[1] - v_des_world[1]);
-// #else
-// #ifdef _LAMBDA_R2_
-//             double pfx_rel   =  0.45 * seResult.vWorld[0] * 0.5 * gait->_stance * _dtSwing +
-//                                 0.12  * (seResult.vWorld[0] - v_des_world[0]);
-
-//             double pfy_rel   =  0.45 * seResult.vWorld[1] * 0.5 * gait->_stance * _dtSwing +
-//                                 0.12  * (seResult.vWorld[1] - v_des_world[1]);
-// #endif
-// #endif
-// #endif
-            pfx_rel = fminf(fmaxf(pfx_rel, -p_rel_max), p_rel_max);
-            pfy_rel = fminf(fmaxf(pfy_rel, -p_rel_max), p_rel_max);
-
-            Pf[0] += pfx_rel;
-            Pf[1] += pfy_rel; 
-            Pf[2] = 0.0;
-
-            // footSwingTrajectory[foot].setFinalPosition(Pf);        
-
-        // }
-
-    }
-}
-
-
-/******************************************************************************************************/
-/******************************************************************************************************/
 
 void standLegController::computeFootDesiredPosition(){
     for(int foot = 0; foot < nLegs; foot++){
         Vec3<double> pDesFootWorld = pFoot_w[foot];
+        Vec3<double> pDesPositionWrold = Vec3<double>(seResult.position[0], seResult.position[1], Height);  //胴体の理想位置を構築
         Eigen::Vector3d hipWidthOffSet = data->_biped->getHipYawLocation(foot);
-        pFoot_b[foot] = seResult.rBody * (pDesFootWorld - seResult.position) - hipWidthOffSet ;  //原点を股関節に変換
+        pFoot_b[foot] = seResult.rBody * (pDesFootWorld - pDesPositionWrold) - hipWidthOffSet ;  //股関節を原点とした足座標を作成
         std::cout << "pDesFootWorld " << pDesFootWorld.transpose() << std::endl;
         std::cout << "hipWidthOffSet " << hipWidthOffSet.transpose() << std::endl;
         std::cout << "seResult.position " << seResult.position.transpose() << std::endl;
-        std::cout << "pFoot_b[foot] " << pFoot_b[foot].transpose() << std::endl;
+        std::cout << "pFoot_b[" << foot << "] " << pFoot_b[foot].transpose() << std::endl;
         std::cout << "seResult.rBody" << std::endl << seResult.rBody << std::endl;
     }    
 }

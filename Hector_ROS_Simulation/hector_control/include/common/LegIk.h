@@ -22,6 +22,7 @@ class LegIk {
         Vec3<double> R_hipYawLocation;
         Vec3<double> R_hipRollLocation;
         double FootHeight;
+        double Height;
 
         // utility functions
         double clamp(double val, double minVal, double maxVal) {
